@@ -30,8 +30,9 @@ export interface GeminiOpportunityResult {
   };
 }
 
-// Chave pública de testes do Gemini API (em produção o usuário pode substituir no .env)
-const GEMINI_API_KEY = "AQ.Ab8RN6JKst5LtsOfsYOlyae2jyFxe3l6v6Sj7lnc6wEvOxJpDA"; // Insira sua chave do Google AI Studio se desejar
+// Lê a chave de API de forma segura a partir das variáveis de ambiente do Vite
+const GEMINI_API_KEY = import.meta.env.VITE_GEMINI_API_KEY || ""; 
+
 
 export const analyzeWithGemini = async (promptInput: string): Promise<GeminiOpportunityResult> => {
   const systemPrompt = `Você é o R.I.O. (Radar Inteligente de Oportunidades), o principal cérebro estratégico do A.I.O.

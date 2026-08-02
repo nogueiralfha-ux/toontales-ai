@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query, orderBy } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query } from "firebase/firestore";
 
 // Configurações do Firebase do A.I.O (Substituir com as chaves reais do Firebase Console)
 const firebaseConfig = {

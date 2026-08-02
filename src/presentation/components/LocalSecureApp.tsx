@@ -74,12 +74,11 @@ export const LocalSecureApp: React.FC = () => {
   const handleFinishQuiz = async (data: QuizData) => {
     setIsLoading(true);
     const promptPayload = `Perfil do usuário no Quiz A.I.O:
-- Idade: ${data.age}
-- Profissão atual: ${data.job}
-- Orçamento disponível: ${data.budget}
-- Tempo livre por semana: ${data.freeTime}
+- Objetivo do usuário: ${data.objective}
+- Capital disponível para começar: R$ ${data.capital}
+- Tempo livre semanal: ${data.time}
 - Habilidades selecionadas: ${data.skills.join(', ')}
-- Nível técnico: ${data.technicalLevel}`;
+- Áreas de interesse: ${data.interests.join(', ')}`;
 
     try {
       const geminiResult = await analyzeWithGemini(promptPayload);
@@ -238,8 +237,8 @@ export const LocalSecureApp: React.FC = () => {
     setIsLoading(true);
     const promptPayload = `Análise de Engenharia Reversa por Link:
 - URL do Concorrente: ${data.url}
-- Tipo de Produto: ${data.type}
-- Crítica / Melhoria identificada pelo usuário: ${data.painPoint}`;
+- Categoria de Produto: ${data.category}
+- Crítica / Observações do usuário: ${data.notes}`;
 
     try {
       const geminiResult = await analyzeWithGemini(promptPayload);
@@ -249,7 +248,7 @@ export const LocalSecureApp: React.FC = () => {
       console.warn("Usando fallback de dados locais (Chave Gemini vazia ou erro de rede).");
       
       const mockResult: OpportunityResult = {
-        diagnostico: `Análise de Engenharia Reversa efetuada com sucesso para a URL fornecida (${data.url}). Identificamos um concorrente do tipo "${data.type}" no nicho de mercado. O seu diferencial competitivo sugerido é "${data.painPoint || 'Melhoria na usabilidade e velocidade de suporte'}". A melhor alternativa para competir sem alto investimento inicial é o desenvolvimento de um serviço automatizado sob assinatura.`,
+        diagnostico: `Análise de Engenharia Reversa efetuada com sucesso para a URL fornecida (${data.url}). Identificamos um concorrente do tipo "${data.category}" no nicho de mercado. O seu diferencial competitivo sugerido é "${data.notes || 'Melhoria na usabilidade e velocidade de suporte'}". A melhor alternativa para competir sem alto investimento inicial é o desenvolvimento de um serviço automatizado sob assinatura.`,
         necessidade: `Micro-SaaS de Atendimento Customizado Baseado no Concorrente ${data.url.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}`,
         urgencia: "90/100 - Oportunidade quente. O concorrente possui alto volume de buscas mas peca no pós-venda.",
         potencialMercado: "Mercado local estimado em R$ 100k+ anuais em captação local.",

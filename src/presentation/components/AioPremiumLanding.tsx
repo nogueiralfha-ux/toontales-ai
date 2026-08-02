@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import bannerPerfis from '../../assets/perfis_renda_extra.jpg';
 import mockupCelular from '../../assets/mockup_celular_aio.jpg';
 
 interface AioPremiumLandingProps {
@@ -305,7 +304,7 @@ export const AioPremiumLanding: React.FC<AioPremiumLandingProps> = ({ onStartQui
       </section>
 
       {/* SEÇÃO 6: NÚMEROS / CONTADORES */}
-      <section style={{ padding: '5rem 2rem', backgroundColor: '#0B1B3D', borderY: '1px solid rgba(255,255,255,0.05)' }}>
+      <section style={{ padding: '5rem 2rem', backgroundColor: '#0B1B3D', borderTop: '1px solid rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '3rem', maxWidth: '1000px', margin: '0 auto', textAlign: 'center' }}>
           <div>
             <h3 style={{ fontSize: '3rem', fontWeight: 900, color: '#00C8FF', margin: 0 }}>+150</h3>

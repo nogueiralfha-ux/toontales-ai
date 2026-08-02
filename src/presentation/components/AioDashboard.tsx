@@ -107,7 +107,7 @@ ${result.fasesExecucao.map((fase, idx) => {
 }).join('\n')}
 
 [6. CHECKLIST DE PRIMEIRAS AÇÕES]
-${result.proximosPassos.map((p, i) => `[ ] ${p}`).join('\n')}
+${result.proximosPassos.map((p) => `[ ] ${p}`).join('\n')}
 
 [7. ANÁLISE DE SEGURANÇA E CRESCIMENTO]
 * Principais Riscos Mapeados:
