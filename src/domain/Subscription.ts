@@ -29,7 +29,7 @@ export const PLAN_LIMITS: Record<PlanType, SubscriptionLimits> = {
   },
   hero: {
     maxStoriesPerMonth: 15,
-    maxVideosPerMonth: 5,
+    maxVideosPerMonth: 3,
     maxCharacters: 5
   },
   professional: {
@@ -38,7 +38,7 @@ export const PLAN_LIMITS: Record<PlanType, SubscriptionLimits> = {
     maxCharacters: 10
   },
   legendary: {
-    maxStoriesPerMonth: 100, // soft limit
+    maxStoriesPerMonth: 150, // 150 stories per month limit
     maxVideosPerMonth: 25,
     maxCharacters: 15
   }

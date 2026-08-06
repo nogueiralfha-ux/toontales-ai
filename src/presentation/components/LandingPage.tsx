@@ -467,6 +467,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                     <span className="text-amber-500">✓</span> 15 histórias ilustradas por mês
                   </li>
                   <li className="flex items-center gap-2.5">
+                    <span className="text-amber-500">✓</span> 3 vídeos de 4 minutos por mês
+                  </li>
+                  <li className="flex items-center gap-2.5">
                     <span className="text-amber-500">✓</span> Estúdio de Pintura e Giz de Cera
                   </li>
                   <li className="flex items-center gap-2.5">
@@ -492,7 +495,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
               </span>
               <div>
                 <h3 className="text-xl font-bold text-white">Criador / Estúdio</h3>
-                <p className="text-slate-400 text-xs mt-1">Criações infinitas e acesso a todos os recursos.</p>
+                <p className="text-slate-400 text-xs mt-1">Acesso a todos os recursos e limite estendido.</p>
                 <div className="my-6">
                   <span className="text-4xl font-black text-amber-400">R$ {prices.legendary}</span>
                   <span className="text-slate-400 text-xs font-bold block">/mês</span>
@@ -502,7 +505,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                 </div>
                 <ul className="text-slate-300 text-xs font-medium space-y-3.5 border-t border-slate-800 pt-6">
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-400">✓</span> <strong>Histórias Ilimitadas</strong> (Uso razoável)
+                    <span className="text-amber-400">✓</span> <strong>150 histórias ilustradas</strong> por mês
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="text-amber-400">✓</span> Vídeos em Alta Definição

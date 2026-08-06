@@ -222,7 +222,7 @@ export const LocalSecureApp: React.FC = () => {
   const handleBuySingleStory = (_childName: string, theme: string, _ageGroup: string, childPhoto: string | null) => {
     localStorage.setItem('toontales_pending_photo', childPhoto || '');
     localStorage.setItem('toontales_pending_age', _ageGroup);
-    const price = theme === 'Livre' ? 29.00 : 19.90;
+    const price = theme === 'Livre' ? 39.00 : 19.90;
     setPendingPlan({ planType: 'single_story', billingCycle: 'mensal', price });
     setShowCheckout(true);
   };
@@ -237,7 +237,7 @@ export const LocalSecureApp: React.FC = () => {
       };
       setSubscription(updatedSub);
       localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
-      alert("Crédito avulso de R$ 19,90 ativado com sucesso! Você pode criar ou baixar sua história agora.");
+      alert(`Crédito avulso de R$ ${pendingPlan.price.toFixed(2)} ativado com sucesso! Você pode criar ou baixar sua história agora.`);
       setShowCheckout(false);
       setPendingPlan(null);
       
