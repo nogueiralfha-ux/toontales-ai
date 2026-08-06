@@ -225,22 +225,22 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                   </div>
 
                   <div 
-                    onClick={() => handlePriceChange(29.00)}
-                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex justify-between items-center ${activePrice === 29.00 ? 'border-slate-400 bg-slate-50' : 'border-slate-200 hover:border-slate-350'}`}
+                    onClick={() => handlePriceChange(39.00)}
+                    className={`p-4 rounded-2xl border-2 cursor-pointer transition-all flex justify-between items-center ${activePrice === 39.00 ? 'border-slate-400 bg-slate-50' : 'border-slate-200 hover:border-slate-350'}`}
                   >
                     <div className="flex items-center gap-3">
                       <input 
                         type="radio" 
-                        checked={activePrice === 29.00} 
+                        checked={activePrice === 39.00} 
                         onChange={() => {}} 
-                        className="accent-slate-505 cursor-pointer" 
+                        className="accent-slate-500 cursor-pointer" 
                       />
                       <div>
                         <strong className="text-xs font-black text-slate-700 block">📖 Homenagem Básica (Sem Vídeo)</strong>
                         <span className="text-[10px] text-slate-500 font-medium">Livro Digital Completo (16 Cenas) + PDF + Áudio</span>
                       </div>
                     </div>
-                    <span className="text-xs font-black text-slate-600">R$ 29,00</span>
+                    <span className="text-xs font-black text-slate-600">R$ 39,00</span>
                   </div>
                 </div>
               </div>

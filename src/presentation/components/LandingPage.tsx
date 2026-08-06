@@ -364,7 +364,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                   className="w-full py-4 mt-2 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-600 hover:to-orange-600 text-white font-black text-sm rounded-xl shadow-lg transition-all flex flex-col items-center justify-center gap-0.5 cursor-pointer"
                 >
                   <span className="text-sm font-extrabold">Liberar História Completa + PDF 🚀</span>
-                  <span className="text-[10px] font-semibold opacity-90">R$ {selectedTheme === 'Livre' ? '29,00' : '19,90'} no Pix avulso ou assinatura</span>
+                  <span className="text-[10px] font-semibold opacity-90">R$ {selectedAge === 'adulto' ? '59,00' : (selectedTheme === 'Livre' ? '39,00' : '19,90')} no Pix avulso ou assinatura</span>
                 </button>
               </div>
             )}

@@ -248,7 +248,11 @@ export const LocalSecureApp: React.FC = () => {
   const handleBuySingleStory = (_childName: string, theme: string, _ageGroup: string, childPhoto: string | null) => {
     localStorage.setItem('toontales_pending_photo', childPhoto || '');
     localStorage.setItem('toontales_pending_age', _ageGroup);
-    const price = theme === 'Livre' ? 39.00 : 19.90;
+    
+    // Vídeos acima de 4 minutos (faixa etária Adulto) cobram R$ 59,00
+    const isLongVideo = _ageGroup === 'adulto';
+    const price = isLongVideo ? 59.00 : (theme === 'Livre' ? 39.00 : 19.90);
+    
     setPendingPlan({ planType: 'single_story', billingCycle: 'mensal', price });
     setShowCheckout(true);
   };
