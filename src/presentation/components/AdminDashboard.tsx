@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PlanType } from '../../domain/Subscription';
+import { TaceEngine, TaceEngineConfig, TaceQuality, TaceResolution, TaceResourceType } from '../../services/TaceEngine';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -29,7 +30,8 @@ interface AIProvider {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
-  const [activeTab, setActiveTab] = useState<'metrics' | 'users' | 'marketplace'>('metrics');
+  const [activeTab, setActiveTab] = useState<'metrics' | 'users' | 'marketplace' | 'tace'>('metrics');
+  const [taceConfig, setTaceConfig] = useState<TaceEngineConfig>(TaceEngine.getConfig());
 
   // Simulated Users state
   const [users, setUsers] = useState<SimulatedUser[]>([
@@ -107,7 +109,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
       </div>
 
       {/* Tabs Selector */}
-      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1.5 max-w-md mx-auto w-full shadow-inner border border-slate-200/50">
+      <div className="flex bg-slate-100 p-1.5 rounded-2xl gap-1.5 max-w-xl mx-auto w-full shadow-inner border border-slate-200/50">
         <button
           onClick={() => setActiveTab('metrics')}
           className={`flex-1 py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
@@ -130,7 +132,15 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             activeTab === 'marketplace' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-750'
           }`}
         >
-          🔌 Marketplace de IA
+          🔌 Provedores de IA
+        </button>
+        <button
+          onClick={() => setActiveTab('tace')}
+          className={`flex-1 py-3 rounded-xl font-black text-xs transition-all flex items-center justify-center gap-2 ${
+            activeTab === 'tace' ? 'bg-white text-slate-800 shadow-sm' : 'text-slate-500 hover:text-slate-750'
+          }`}
+        >
+          🪙 Configurações TACE
         </button>
       </div>
 
@@ -316,6 +326,175 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        )}
+
+        {activeTab === 'tace' && (
+          <div className="bg-white rounded-[2.5rem] border border-slate-100 p-8 shadow-md flex flex-col gap-8">
+            <div className="flex justify-between items-center flex-wrap gap-4 border-b border-slate-100 pb-4">
+              <div>
+                <h3 className="text-xl font-bold text-slate-800">Painel TACE Weight Control</h3>
+                <p className="text-slate-500 text-xs mt-1">Ajuste os pesos de qualidade, resoluções e o consumo de créditos (TC) das IAs em tempo real para garantir sua margem de 80%.</p>
+              </div>
+              <button
+                onClick={() => {
+                  TaceEngine.saveConfig(taceConfig);
+                  alert("Pesos do Credit Engine TACE salvos com sucesso e propagados ao vivo!");
+                }}
+                className="px-5 py-3 bg-gradient-to-r from-amber-400 to-amber-500 text-white font-extrabold rounded-xl text-xs shadow-md transition-all cursor-pointer"
+              >
+                💾 Salvar Configurações TACE
+              </button>
+            </div>
+
+            {/* Quality & Resolution Multipliers */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+              {/* Quality Multipliers */}
+              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-150">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Multiplicadores de Qualidade</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {(Object.keys(taceConfig.qualityWeights) as TaceQuality[]).map((q) => (
+                    <div key={q} className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">{q}</label>
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        value={taceConfig.qualityWeights[q]}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 1.0;
+                          setTaceConfig({
+                            ...taceConfig,
+                            qualityWeights: { ...taceConfig.qualityWeights, [q]: val }
+                          });
+                        }}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Resolution Multipliers */}
+              <div className="bg-slate-50 p-6 rounded-3xl border border-slate-150">
+                <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Multiplicadores de Resolução</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  {(Object.keys(taceConfig.resolutionWeights) as TaceResolution[]).map((r) => (
+                    <div key={r} className="flex flex-col gap-1.5">
+                      <label className="text-[10px] font-black text-slate-500 uppercase">{r}</label>
+                      <input 
+                        type="number" 
+                        step="0.1"
+                        value={taceConfig.resolutionWeights[r]}
+                        onChange={(e) => {
+                          const val = parseFloat(e.target.value) || 1.0;
+                          setTaceConfig({
+                            ...taceConfig,
+                            resolutionWeights: { ...taceConfig.resolutionWeights, [r]: val }
+                          });
+                        }}
+                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+                      />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Resource Base Costs */}
+            <div className="bg-slate-50 p-6 rounded-3xl border border-slate-150">
+              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Custo Base dos Recursos (TC)</h4>
+              <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                {(Object.keys(taceConfig.resourceBaseCosts) as TaceResourceType[]).map((res) => (
+                  <div key={res} className="flex flex-col gap-1.5">
+                    <label className="text-[10px] font-black text-slate-500 uppercase">{res}</label>
+                    <input 
+                      type="number" 
+                      value={taceConfig.resourceBaseCosts[res]}
+                      onChange={(e) => {
+                        const val = parseInt(e.target.value) || 0;
+                        setTaceConfig({
+                          ...taceConfig,
+                          resourceBaseCosts: { ...taceConfig.resourceBaseCosts, [res]: val }
+                        });
+                      }}
+                      className="w-full px-3 py-2 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Models Table */}
+            <div>
+              <h4 className="text-sm font-black text-slate-800 uppercase tracking-wider mb-4">Modelos de Inteligência Artificial</h4>
+              <div className="overflow-x-auto border border-slate-100 rounded-2xl">
+                <table className="w-full text-left border-collapse bg-slate-50/40">
+                  <thead>
+                    <tr className="border-b border-slate-100 text-slate-400 text-[10px] font-black uppercase tracking-wider bg-slate-50/80">
+                      <th className="p-4">Modelo / IA</th>
+                      <th className="p-4">Provedor</th>
+                      <th className="p-4">Custo Base (TC)</th>
+                      <th className="p-4">Prioridade</th>
+                      <th className="p-4 text-right">Status</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 text-xs font-semibold text-slate-700">
+                    {taceConfig.models.map((model, idx) => (
+                      <tr key={model.modelId} className="hover:bg-slate-50/50">
+                        <td className="p-4 font-bold text-slate-850">{model.name}</td>
+                        <td className="p-4 font-mono text-slate-500 uppercase text-[10px]">{model.provider}</td>
+                        <td className="p-4">
+                          <input 
+                            type="number" 
+                            value={model.baseCostTc}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 0;
+                              const updatedModels = [...taceConfig.models];
+                              updatedModels[idx] = { ...model, baseCostTc: val };
+                              setTaceConfig({ ...taceConfig, models: updatedModels });
+                            }}
+                            className="w-20 px-2 py-1 bg-white border border-slate-200 rounded-lg text-xs font-bold text-slate-700 focus:outline-none focus:border-amber-500"
+                          />
+                        </td>
+                        <td className="p-4">
+                          <select 
+                            value={model.priority}
+                            onChange={(e) => {
+                              const val = parseInt(e.target.value) || 1;
+                              const updatedModels = [...taceConfig.models];
+                              updatedModels[idx] = { ...model, priority: val };
+                              setTaceConfig({ ...taceConfig, models: updatedModels });
+                            }}
+                            className="bg-white border border-slate-200 px-2 py-1 rounded-lg text-xs font-bold outline-none text-slate-700"
+                          >
+                            {[1, 2, 3, 4, 5].map((n) => (
+                              <option key={n} value={n}>{n}</option>
+                            ))}
+                          </select>
+                        </td>
+                        <td className="p-4 text-right">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updatedModels = [...taceConfig.models];
+                              updatedModels[idx] = { ...model, isActive: !model.isActive };
+                              setTaceConfig({ ...taceConfig, models: updatedModels });
+                            }}
+                            className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-wider transition-all border ${
+                              model.isActive
+                                ? 'bg-emerald-500 border-emerald-450 text-white'
+                                : 'bg-slate-200 border-slate-300 text-slate-600'
+                            }`}
+                          >
+                            {model.isActive ? 'Ativo' : 'Inativo'}
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
         )}

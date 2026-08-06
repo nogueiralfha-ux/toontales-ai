@@ -14,6 +14,7 @@ export interface UserSubscription {
   usage: {
     storiesCreatedThisPeriod: number;
     videosCreatedThisPeriod: number;
+    taceCreditsConsumed?: number;
   };
   cancelAtPeriodEnd: boolean;
   paymentMethod?: 'pix' | 'credit_card';

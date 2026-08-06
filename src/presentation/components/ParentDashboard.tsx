@@ -1,6 +1,6 @@
 import React from 'react';
 import { Story } from '../../domain/Story';
-import { UserSubscription, PlanType, PLAN_LIMITS } from '../../domain/Subscription';
+import { UserSubscription, PlanType } from '../../domain/Subscription';
 
 interface ParentDashboardProps {
   stories: Story[];
@@ -19,9 +19,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onCancelSubscription,
   onDowngradeToFree,
 }) => {
-  const limits = PLAN_LIMITS[subscription.planType];
-  const storiesCreated = stories.length;
-
   const triggerDownload = (fileName: string, mimeType: string, content: string) => {
     const blob = new Blob([content], { type: mimeType });
     const link = document.createElement('a');
@@ -189,8 +186,6 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
     return 'Plano Profissional';
   };
 
-  const usagePercent = Math.min(100, (storiesCreated / limits.maxStoriesPerMonth) * 100);
-
   return (
     <div className="max-w-6xl mx-auto p-6 flex flex-col gap-8">
       {/* Overview stats header */}
@@ -238,22 +233,56 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
             </p>
           </div>
 
-          {/* Usage Limit Tracker */}
-          <div className="bg-slate-50 p-6 rounded-3xl border border-slate-100/60">
-            <div className="flex justify-between items-center text-xs font-bold text-slate-600 mb-2">
-              <span>Limite de Geração de Livros</span>
-              <span>{storiesCreated} de {limits.maxStoriesPerMonth} Livros</span>
-            </div>
-            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-              <div 
-                className="h-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-500" 
-                style={{ width: `${usagePercent}%` }} 
-              />
-            </div>
-            <p className="text-[10px] text-slate-400 font-medium mt-2">
-              Seu plano renova em: {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
-            </p>
-          </div>
+          {/* TACE virtual wallet tracker */}
+          {(() => {
+            let totalCredits = subscription.oneTimeCredits ? subscription.oneTimeCredits * 300 : 0;
+            if (subscription.planType === 'free') totalCredits += 100;
+            else if (subscription.planType === 'hero') totalCredits += 1500;
+            else if (subscription.planType === 'professional') totalCredits += 5000;
+            else if (subscription.planType === 'legendary') totalCredits += 12000;
+
+            const usedCredits = subscription.usage?.taceCreditsConsumed || 0;
+            const remainingCredits = Math.max(0, totalCredits - usedCredits);
+            const creditsPercent = Math.min(100, Math.round((remainingCredits / totalCredits) * 100));
+
+            return (
+              <div className="bg-slate-900 text-white p-6 rounded-3xl border border-slate-800 shadow-xl">
+                <div className="flex justify-between items-center mb-4">
+                  <div>
+                    <span className="text-[10px] font-black text-amber-500 uppercase tracking-widest block">Carteira Virtual</span>
+                    <h4 className="text-xl font-black text-slate-100 flex items-center gap-1.5 mt-0.5">
+                      🪙 {remainingCredits.toLocaleString()} <span className="text-xs font-bold text-slate-400">TC Restantes</span>
+                    </h4>
+                  </div>
+                  <span className="px-3 py-1 bg-amber-500/10 border border-amber-500/20 text-amber-400 rounded-full text-[10px] font-bold">
+                    Toon Credits
+                  </span>
+                </div>
+
+                <div className="w-full h-3.5 bg-slate-950 rounded-full overflow-hidden border border-slate-800 p-0.5 mb-4">
+                  <div 
+                    className="h-full bg-gradient-to-r from-amber-500 to-orange-500 transition-all duration-500 rounded-full" 
+                    style={{ width: `${creditsPercent}%` }} 
+                  />
+                </div>
+
+                <div className="grid grid-cols-3 gap-2 text-center border-t border-slate-800 pt-4 mt-2">
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Disponíveis</span>
+                    <strong className="text-xs text-slate-200 font-extrabold">{totalCredits.toLocaleString()} TC</strong>
+                  </div>
+                  <div className="border-x border-slate-800/80">
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Utilizados</span>
+                    <strong className="text-xs text-slate-200 font-extrabold">{usedCredits.toLocaleString()} TC</strong>
+                  </div>
+                  <div>
+                    <span className="text-[9px] font-bold text-slate-400 uppercase block">Renovação</span>
+                    <strong className="text-xs text-emerald-400 font-extrabold">{new Date(subscription.currentPeriodEnd).toLocaleDateString()}</strong>
+                  </div>
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Action Buttons */}
           <div className="flex gap-3 flex-wrap">

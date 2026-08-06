@@ -5,7 +5,7 @@ import { StoryCreator } from './StoryCreator';
 import { StoryViewer } from './StoryViewer';
 import { ParentDashboard } from './ParentDashboard';
 import { LandingPage } from './LandingPage';
-import { UserSubscription, PlanType, PLAN_LIMITS } from '../../domain/Subscription';
+import { UserSubscription, PlanType } from '../../domain/Subscription';
 import { CheckoutModal } from './CheckoutModal';
 import { LoginScreen } from './LoginScreen';
 import { AdminDashboard } from './AdminDashboard';
@@ -15,6 +15,8 @@ import '../styles/index.css';
 export const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
   ? 'http://localhost:3001'
   : '';
+
+import { TaceEngine, TaceQuality } from '../../services/TaceEngine';
 
 const storyService = new MockStoryService();
 
@@ -129,27 +131,39 @@ export const LocalSecureApp: React.FC = () => {
     childPhoto: string | null,
     parentPhoto: string | null
   ) => {
-    const limits = PLAN_LIMITS[subscription.planType];
-    const currentUsage = subscription.usage.storiesCreatedThisPeriod;
-    const hasCredits = (subscription.oneTimeCredits || 0) > 0;
-    const isAdmin = session?.role === 'admin';
+    const quality: TaceQuality = ageGroup === 'adulto' ? 'premium' : 
+                               (subscription.planType === 'free' ? 'economica' : 
+                               (subscription.planType === 'hero' ? 'padrao' : 'premium'));
 
-    if (currentUsage >= limits.maxStoriesPerMonth && !hasCredits && !isAdmin) {
-      alert(
-        `Limite Atingido! O seu plano atual (${
-          subscription.planType === 'free'
-            ? 'Gratuito'
-            : subscription.planType === 'hero'
-            ? 'Inicial'
-            : 'Profissional'
-        }) permite apenas ${limits.maxStoriesPerMonth} histórias por mês. Faça o upgrade ou compre uma História Avulsa para continuar.`
-      );
-      setSelectedStory(null);
-      setActiveTab('parents');
+    // TACE Cache - Verifica cache antes de gastar qualquer crédito
+    const cacheKey = `${theme}_${ageGroup}_${prompt.substring(0, 30)}_${childPhoto ? 'photo' : 'no'}`;
+    const cachedStory = TaceEngine.checkCache(cacheKey);
+    if (cachedStory) {
+      console.log("[TACE] Retornando história protegida direto do Cache local.");
+      const updatedStories = [cachedStory, ...stories];
+      setStories(updatedStories);
+      setSelectedStory(cachedStory);
       return;
     }
 
-    console.log("Gerando com foto da criança:", childPhoto ? "sim" : "não", "| foto do responsável:", parentPhoto ? "sim" : "não");
+    // TACE AI Router - Seleciona melhor IA de acordo com qualidade
+    const bestModel = TaceEngine.selectBestModel('story', quality);
+
+    // TACE Credit Engine - Valida e debita créditos do usuário
+    const deductResult = TaceEngine.deductCredits(
+      session?.email || 'anonimo',
+      'story',
+      quality,
+      '720p',
+      bestModel.modelId
+    );
+
+    if (!deductResult.success) {
+      alert(deductResult.message);
+      return;
+    }
+
+    console.log(`[TACE] Geração autorizada! Debitado ${deductResult.cost} TC. Provedor roteado: ${bestModel.provider} (${bestModel.name}).`);
     
     let newStory: Story;
 
@@ -177,32 +191,20 @@ export const LocalSecureApp: React.FC = () => {
       newStory = await storyService.generateStory(theme, ageGroup, title);
     }
     
-    // Save to state & localstorage
+    // Salva no estado
     const updatedStories = [newStory, ...stories];
     setStories(updatedStories);
     localStorage.setItem('toontales_stories', JSON.stringify(updatedStories));
 
-    // Update usage or credits state
-    let updatedSub: UserSubscription;
-    if (currentUsage >= limits.maxStoriesPerMonth && (subscription.oneTimeCredits || 0) > 0) {
-      updatedSub = {
-        ...subscription,
-        oneTimeCredits: Math.max(0, (subscription.oneTimeCredits || 0) - 1)
-      };
-      alert("História gerada com sucesso consumindo 1 crédito avulso!");
-    } else {
-      updatedSub = {
-        ...subscription,
-        usage: {
-          ...subscription.usage,
-          storiesCreatedThisPeriod: currentUsage + 1
-        }
-      };
-    }
-    setSubscription(updatedSub);
-    localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+    // Grava no Cache para futuras consultas
+    TaceEngine.setCache(cacheKey, newStory);
 
-    // Open the story directly
+    // Atualiza a assinatura no localstorage para refletir o débito de créditos no estado local
+    const subSaved = localStorage.getItem('toontales_subscription');
+    if (subSaved) {
+      setSubscription(JSON.parse(subSaved));
+    }
+
     setSelectedStory(newStory);
   };
 
