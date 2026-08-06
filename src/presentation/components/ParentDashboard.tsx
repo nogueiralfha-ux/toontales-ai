@@ -31,6 +31,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   };
 
   const handleDownloadPDFBook = (story: Story) => {
+    if (subscription.planType === 'free') {
+      alert("Acesso Negado! O download do livro impresso em PDF é exclusivo para assinantes. Faça o upgrade do seu plano para liberar.");
+      return;
+    }
+
     const bookHtml = `
       <html>
         <head>
@@ -61,6 +66,11 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   };
 
   const handleDownloadPDFColoring = (story: Story) => {
+    if (subscription.planType === 'free') {
+      alert("Acesso Negado! O download do caderno de colorir em PDF é exclusivo para assinantes. Faça o upgrade do seu plano para liberar.");
+      return;
+    }
+
     const coloringHtml = `
       <html>
         <head>

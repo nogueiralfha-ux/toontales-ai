@@ -56,6 +56,32 @@ export const LocalSecureApp: React.FC = () => {
   const [showCheckout, setShowCheckout] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<{ planType: PlanType | 'single_story'; billingCycle: 'mensal' | 'anual'; price: number } | null>(null);
 
+  // Block right-clicks and inspect element keys for maximum security
+  useEffect(() => {
+    const handleContextMenu = (e: MouseEvent) => e.preventDefault();
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block F12, Ctrl+Shift+I, Ctrl+U, Ctrl+S, Ctrl+P
+      if (
+        e.key === 'F12' ||
+        (e.ctrlKey && e.shiftKey && e.key === 'I') ||
+        (e.ctrlKey && e.shiftKey && e.key === 'i') ||
+        (e.ctrlKey && (e.key === 'u' || e.key === 'U')) ||
+        (e.ctrlKey && (e.key === 's' || e.key === 'S')) ||
+        (e.ctrlKey && (e.key === 'p' || e.key === 'P'))
+      ) {
+        e.preventDefault();
+      }
+    };
+
+    document.addEventListener('contextmenu', handleContextMenu);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('contextmenu', handleContextMenu);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, []);
+
   // Sync stories and session validation
   useEffect(() => {
     // Validate session

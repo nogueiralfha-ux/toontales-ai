@@ -247,6 +247,14 @@ export const ColoringCanvas: React.FC<ColoringCanvasProps> = ({ coloringSvg, sto
   };
 
   const handleDownload = () => {
+    const saved = localStorage.getItem('toontales_subscription');
+    const isFree = saved ? JSON.parse(saved).planType === 'free' : true;
+
+    if (isFree) {
+      alert("Acesso Negado! O download do material de colorir é exclusivo para assinantes premium. Faça o upgrade para liberar.");
+      return;
+    }
+
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -283,6 +291,14 @@ export const ColoringCanvas: React.FC<ColoringCanvasProps> = ({ coloringSvg, sto
   };
 
   const handlePrint = () => {
+    const saved = localStorage.getItem('toontales_subscription');
+    const isFree = saved ? JSON.parse(saved).planType === 'free' : true;
+
+    if (isFree) {
+      alert("Acesso Negado! A impressão do material de colorir é exclusiva para assinantes premium. Faça o upgrade para liberar.");
+      return;
+    }
+
     const win = window.open('', '_blank');
     if (!win) return;
     win.document.write(`

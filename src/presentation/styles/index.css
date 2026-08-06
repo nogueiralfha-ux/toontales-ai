@@ -2,11 +2,22 @@
 
 @import "tailwindcss";
 
-/* Additional design adjustments */
+/* Additional design adjustments and material protection */
 body {
   background-color: #f3f6fa;
   font-family: 'Outfit', 'Inter', system-ui, sans-serif;
   overflow-x: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+}
+
+img, svg {
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 /* Playful animations for children */
