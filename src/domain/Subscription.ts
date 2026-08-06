@@ -40,7 +40,7 @@ export const PLAN_LIMITS: Record<PlanType, SubscriptionLimits> = {
   },
   legendary: {
     maxStoriesPerMonth: 150, // 150 stories per month limit
-    maxVideosPerMonth: 25,
+    maxVideosPerMonth: 35,
     maxCharacters: 15
   }
 };

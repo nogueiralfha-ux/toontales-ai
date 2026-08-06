@@ -508,7 +508,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                     <span className="text-amber-400">✓</span> <strong>150 histórias ilustradas</strong> por mês
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-400">✓</span> Vídeos em Alta Definição
+                    <span className="text-amber-400">✓</span> <strong>35 vídeos animados</strong> por mês
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="text-amber-400">✓</span> Estúdio de Pintura Completo
