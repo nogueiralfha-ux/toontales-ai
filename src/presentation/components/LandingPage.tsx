@@ -136,7 +136,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
         {/* Interactive Stats Banner */}
         <div className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6 w-full bg-white/70 backdrop-blur-md rounded-[2.5rem] p-8 border border-white/60 shadow-lg">
           <div className="text-center">
-            <h4 className="text-3xl font-black text-amber-600">3 Einos</h4>
+            <h4 className="text-3xl font-black text-amber-600">3 Eixos</h4>
             <p className="text-xs font-bold text-slate-500 mt-1">Bíblico, Aventuras e Educação</p>
           </div>
           <div className="text-center border-l border-slate-100">
