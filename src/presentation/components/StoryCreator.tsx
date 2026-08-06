@@ -11,6 +11,8 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
   const [ageGroup, setAgeGroup] = useState<AgeGroup>('2-6');
   const [childPhoto, setChildPhoto] = useState<string | null>(null);
   const [parentPhoto, setParentPhoto] = useState<string | null>(null);
+  const [childName, setChildName] = useState('');
+  const [adultName, setAdultName] = useState('');
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
@@ -71,8 +73,16 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
       });
     }, 1500);
 
+    let finalPrompt = prompt;
+    if (childName.trim()) {
+      finalPrompt = `[Nome da Criança/Herói: ${childName}] ${finalPrompt}`;
+    }
+    if (adultName.trim()) {
+      finalPrompt = `[Nome do Adulto: ${adultName}] ${finalPrompt}`;
+    }
+
     try {
-      await onGenerate(theme, ageGroup, prompt, childPhoto, parentPhoto);
+      await onGenerate(theme, ageGroup, finalPrompt, childPhoto, parentPhoto);
     } catch (err) {
       console.error(err);
     } finally {
@@ -119,6 +129,31 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
       </div>
 
       <form onSubmit={handleSubmit} className="flex flex-col gap-6">
+        {/* Names Row */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Nome da Criança / Protagonista</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Lucas"
+              required={!adultName.trim()}
+              value={childName}
+              onChange={(e) => setChildName(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-slate-200 text-sm font-semibold placeholder-slate-500"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Nome do Adulto / Homenageado (Opcional)</label>
+            <input 
+              type="text" 
+              placeholder="Ex: Papai Carlos"
+              value={adultName}
+              onChange={(e) => setAdultName(e.target.value)}
+              className="w-full px-4 py-3 bg-slate-950/60 border border-slate-800 rounded-2xl focus:outline-none focus:ring-2 focus:ring-amber-500/30 focus:border-amber-500 text-slate-200 text-sm font-semibold placeholder-slate-500"
+            />
+          </div>
+        </div>
+
         {/* Prompt */}
         <div className="flex flex-col gap-2">
           <label className="text-xs font-black text-slate-400 uppercase tracking-widest">Qual será a ideia da história?</label>
