@@ -1,473 +1,646 @@
-import React, { useState } from 'react';
-import { AioPremiumLanding } from './AioPremiumLanding';
-import { AioQuiz, QuizData } from './AioQuiz';
-import { AioLinkAnalyzer, LinkAnalysisData } from './AioLinkAnalyzer';
-import { AioDashboard, OpportunityResult } from './AioDashboard';
-import { analyzeWithGemini } from '../../services/geminiService';
-import { saveLeadToFirestore, getLeadsFromFirestore } from '../../services/firebaseConfig';
+import React, { useState, useEffect } from 'react';
+import { Story, StoryTheme, AgeGroup } from '../../domain/Story';
+import { MockStoryService } from '../../services/MockStoryService';
+import { StoryCreator } from './StoryCreator';
+import { StoryViewer } from './StoryViewer';
+import { ParentDashboard } from './ParentDashboard';
+import { LandingPage } from './LandingPage';
+import { UserSubscription, PlanType, PLAN_LIMITS } from '../../domain/Subscription';
+import { CheckoutModal } from './CheckoutModal';
+import { LoginScreen } from './LoginScreen';
+import { AdminDashboard } from './AdminDashboard';
+import { AuthService, UserSession } from '../../services/AuthService';
 import '../styles/index.css';
 
+export const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+  ? 'http://localhost:3001'
+  : '';
+
+const storyService = new MockStoryService();
+
+type ViewType = 'landing' | 'login' | 'studio' | 'admin';
+
 export const LocalSecureApp: React.FC = () => {
-  // Estado de leads salvos e controle administrativo
-  const [screen, setScreen] = useState<'landing' | 'quiz' | 'link_input' | 'dashboard' | 'admin'>('landing');
-  const [result, setResult] = useState<OpportunityResult | null>(null);
+  const [currentView, setCurrentView] = useState<ViewType>('landing');
+  const [activeTab, setActiveTab] = useState<'create' | 'library' | 'parents'>('create');
+  const [stories, setStories] = useState<Story[]>([]);
+  const [selectedStory, setSelectedStory] = useState<Story | null>(null);
+  
+  // Auth Session State
+  const [session, setSession] = useState<UserSession | null>(() => AuthService.getSession());
 
-  // Estados de Autenticação do Administrador
-  const [isAdminAuthed, setIsAdminAuthed] = useState(false);
-  const [emailInput, setEmailInput] = useState('');
-  const [passwordInput, setPasswordInput] = useState('');
+  // User Subscription State
+  const [subscription, setSubscription] = useState<UserSubscription>(() => {
+    try {
+      const saved = localStorage.getItem('toontales_subscription');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.error("Erro ao carregar assinatura:", e);
+    }
+    return {
+      planType: 'free',
+      status: 'free_tier',
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      usage: {
+        storiesCreatedThisPeriod: 0,
+        videosCreatedThisPeriod: 0
+      },
+      cancelAtPeriodEnd: false,
+      billingCycle: 'mensal'
+    };
+  });
 
-  // Monitora alterações na URL para permitir acessar a rota /admin digitando no navegador
-  React.useEffect(() => {
-    if (window.location.hash === '#/admin' || window.location.pathname.endsWith('/admin')) {
-      setScreen('admin');
+  const [showCheckout, setShowCheckout] = useState(false);
+  const [pendingPlan, setPendingPlan] = useState<{ planType: PlanType | 'single_story'; billingCycle: 'mensal' | 'anual'; price: number } | null>(null);
+
+  // Sync stories and session validation
+  useEffect(() => {
+    // Validate session
+    const currentSession = AuthService.getSession();
+    setSession(currentSession);
+    if (currentSession) {
+      if (currentSession.role === 'admin') {
+        setCurrentView('admin');
+      } else {
+        setCurrentView('studio');
+      }
+    }
+
+    try {
+      const saved = localStorage.getItem('toontales_stories');
+      if (saved) {
+        const parsed = JSON.parse(saved).map((story: any) => ({
+          ...story,
+          createdAt: new Date(story.createdAt)
+        }));
+        setStories(parsed);
+
+        // Sync subscription usage
+        setSubscription(prev => {
+          const updated = {
+            ...prev,
+            usage: {
+              ...prev.usage,
+              storiesCreatedThisPeriod: parsed.length
+            }
+          };
+          localStorage.setItem('toontales_subscription', JSON.stringify(updated));
+          return updated;
+        });
+      }
+    } catch (e) {
+      console.error("Erro ao carregar histórias locais:", e);
     }
   }, []);
 
-  // Leads carregados do Firebase
-  const [firebaseLeads, setFirebaseLeads] = useState<Array<{ id: string; whatsapp: string; idea: string; createdAt: string }>>([]);
+  const handleGenerateStory = async (
+    theme: StoryTheme,
+    ageGroup: AgeGroup,
+    prompt: string,
+    childPhoto: string | null,
+    parentPhoto: string | null
+  ) => {
+    const limits = PLAN_LIMITS[subscription.planType];
+    const currentUsage = subscription.usage.storiesCreatedThisPeriod;
+    const hasCredits = (subscription.oneTimeCredits || 0) > 0;
 
-  const handleSaveLead = async (whatsapp: string, idea: string) => {
-    // 1. Salva no localStorage (Fallback local rápido)
-    try {
-      const storedLeads = localStorage.getItem('aio_captured_leads');
-      const leadsList = storedLeads ? JSON.parse(storedLeads) : [];
-      const newLead = {
-        id: Date.now().toString(),
-        whatsapp,
-        idea,
-        createdAt: new Date().toLocaleString('pt-BR')
-      };
-      leadsList.push(newLead);
-      localStorage.setItem('aio_captured_leads', JSON.stringify(leadsList));
-    } catch (e) {
-      console.error(e);
-    }
-
-    // 2. Salva no Firebase Firestore (Banco de dados real na Nuvem)
-    try {
-      await saveLeadToFirestore(whatsapp, idea);
-    } catch (e) {
-      console.warn("Salvando apenas localmente. Chave do Firebase placeholder ativa.");
-    }
-  };
-
-  // Carrega contatos em tempo real do Firestore ao logar no Admin
-  const loadFirebaseLeads = async () => {
-    try {
-      const leads = await getLeadsFromFirestore();
-      if (leads && leads.length > 0) {
-        setFirebaseLeads(leads);
-      } else {
-        // Fallback local se o Firebase estiver limpo
-        const storedLeads = localStorage.getItem('aio_captured_leads');
-        setFirebaseLeads(storedLeads ? JSON.parse(storedLeads) : []);
-      }
-    } catch (e) {
-      const storedLeads = localStorage.getItem('aio_captured_leads');
-      setFirebaseLeads(storedLeads ? JSON.parse(storedLeads) : []);
-    }
-  };
-
-  const [isLoading, setIsLoading] = useState(false);
-
-  const handleFinishQuiz = async (data: QuizData) => {
-    setIsLoading(true);
-    const promptPayload = `Perfil do usuário no Quiz A.I.O:
-- Objetivo do usuário: ${data.objective}
-- Capital disponível para começar: R$ ${data.capital}
-- Tempo livre semanal: ${data.time}
-- Habilidades selecionadas: ${data.skills.join(', ')}
-- Áreas de interesse: ${data.interests.join(', ')}`;
-
-    try {
-      const geminiResult = await analyzeWithGemini(promptPayload);
-      setResult(geminiResult);
-      setScreen('dashboard');
-    } catch (e) {
-      console.warn("Usando fallback de dados locais (Chave Gemini vazia ou erro de rede).");
-      
-      const hasPhysicalSkill = data.skills.some(s => 
-        ['beauty', 'construction', 'commerce', 'general_services'].includes(s)
+    if (currentUsage >= limits.maxStoriesPerMonth && !hasCredits) {
+      alert(
+        `Limite Atingido! O seu plano atual (${
+          subscription.planType === 'free'
+            ? 'Gratuito'
+            : subscription.planType === 'hero'
+            ? 'Inicial'
+            : 'Profissional'
+        }) permite apenas ${limits.maxStoriesPerMonth} histórias por mês. Faça o upgrade ou compre uma História Avulsa para continuar.`
       );
-
-      let mockResult: OpportunityResult;
-
-      if (hasPhysicalSkill) {
-        mockResult = {
-          diagnostico: "Muitos profissionais tradicionais (como pedreiros, manicures e comerciantes) possuem habilidades técnicas e práticas incríveis, mas perdem muito tempo com agendamentos manuais, orçamentos perdidos ou falta de visibilidade local. Identificamos que o maior gargalo desses profissionais é a captação e gerenciamento digital de clientes da própria região.",
-          necessidade: "Hub de Agendamento, Catálogo de Serviços e Orçamentos para Profissionais Autônomos Locais",
-          urgencia: "91/100 - Alta. Profissionais perdem em média 3 a 4 horas por dia respondendo cotações no WhatsApp.",
-          potencialMercado: "R$ 150M+ no Brasil (Milhares de manicures, pedreiros e autônomos sem presença digital organizada)",
-          solucoes: [
-            {
-              categoria: "Aplicativo / SaaS / IA especializada",
-              titulo: "A.I.O. Link: Assistente Web Gerador de Catálogo e Orçador por WhatsApp",
-              descricao: "Um mini-site para o profissional onde os clientes escolhem o serviço (ex: unha em gel, reforma de banheiro), informam os detalhes e a ferramenta gera na hora uma estimativa ou pré-orçamento que cai direto no WhatsApp do profissional formatado."
-            },
-            {
-              categoria: "Curso / Ebook / Comunidade / Mentoria",
-              titulo: "Treinamento Agenda Cheia: Dominando o Google Meu Negócio",
-              descricao: "Instruções práticas em vídeo passo a passo ensinando profissionais autônomos locais a ficarem no topo das pesquisas do Google da cidade sem precisar gastar nada com anúncios pagos."
-            },
-            {
-              categoria: "Assinatura / Serviço / Marketplace / Plataforma Digital",
-              titulo: "Assinatura Mensal de Templates e Identidade Visual Express para Redes Sociais",
-              descricao: "Serviço de fornecimento mensal de artes profissionais prontas pelo Canva específicas para manicures e prestadores de serviços postarem seus portfólios rapidamente."
-            }
-          ],
-          modeloNegocio: "SaaS Freemium. Grátis até 15 orçamentos mensais. Plano Profissional por R$ 29,90/mês para remover anúncios e liberar agendamentos ilimitados.",
-          estrategia: "Divulgar a ferramenta em grupos locais de Facebook e WhatsApp de prestadores de serviços, focando no benefício de 'parar de responder a mesma coisa toda hora'.",
-          fasesExecucao: [
-            "FASE 01: DESCOBRIR A NECESSIDADE - Conversar com manicures e pedreiros locais sobre como eles controlam a agenda hoje.",
-            "FASE 02: ANALISAR O MERCADO - Identificar o preço cobrado por agendadores genéricos complexos.",
-            "FASE 03: VALIDAR A OPORTUNIDADE - Criar um formulário no Tally fingindo ser o gerador e mandar para 5 conhecidos autônomos.",
-            "FASE 04: CRIAR A SOLUÇÃO - Estruturar o painel de criação de catálogos simplificado pelo celular.",
-            "FASE 05: DESENVOLVER O PRODUTO - Construir o MVP responsivo priorizando navegação mobile rápida.",
-            "FASE 06: CRIAR O MODELO DE NEGÓCIO - Configurar integrações de micro-pagamentos via Pix.",
-            "FASE 07: IMPLEMENTAR AS AUTOMAÇÕES - Criar alertas por SMS/WhatsApp para os clientes confirmarem a presença.",
-            "FASE 08: CRIAR AS CAMPANHAS - Postar antes/depois de profissionais que organizaram suas agendas e lucraram mais.",
-            "FASE 09: VALIDAR OS RESULTADOS - Monitorar a recuperação de contatos.",
-            "FASE 10: ESCALAR O PROJETO - Expandir para regiões metropolitanas."
-          ],
-          potencialCrescimento: "Exponencial no Brasil, impulsionado pelo crescimento do mercado de microempreendedores individuais (MEI).",
-          proximosPassos: [
-            "Montar um modelo de catálogo simples usando No-code.",
-            "Apresentar para 3 profissionais locais e pedir feedback sobre o visual.",
-            "Definir quais são as 3 principais informações exigidas para fazer um orçamento rápido.",
-            "Registrar um domínio acessível para testes."
-          ],
-          riscos: [
-            "Dificuldade de letramento digital de alguns profissionais mais velhos.",
-            "Falta de hábito no uso diário do painel."
-          ],
-          sugestoesMelhoria: [
-            "Fazer a interface 100% otimizada para uso em telas de celular baratas.",
-            "Integrar envio de áudio no painel para facilitar o uso por quem não gosta de digitar."
-          ],
-          notas: {
-            dor: 94,
-            urgencia: 91,
-            mercado: 95,
-            solucao: 88,
-            monetizacao: 80,
-            escalabilidade: 92,
-            concorrencia: 85,
-            potencial: 90,
-            idh: 93,
-            iso: 92,
-            final: 91
-          }
-        };
-      } else {
-        mockResult = {
-          diagnostico: "Com base no perfil informado, identificamos que você possui aptidões ideais para atuar em mercados de automação digital e soluções no-code com foco em SaaS de micro-escala. O gargalo do mercado hoje reside no desconhecimento de pequenas empresas físicas sobre como otimizar seus atendimentos por IA.",
-          necessidade: "Automação Inteligente de Atendimento para Clínicas e Estúdios de Bem-estar",
-          urgencia: "88/100 - Alta demanda por otimização operacional e corte de custos com secretariado",
-          potencialMercado: "R$ 50M+ anuais no Brasil (Microempresas de Serviços)",
-          solucoes: [
-            {
-              categoria: "Aplicativo / SaaS / IA especializada",
-              titulo: "Agenteia: Micro-SaaS de agendamento por WhatsApp AI",
-              descricao: "Um robô inteligente integrado ao WhatsApp que conversa de forma humanizada, negocia horários diretamente com os pacientes/clientes de clínicas, e atualiza a agenda no Google Calendar automaticamente."
-            },
-            {
-              categoria: "Curso / Ebook / Comunidade / Mentoria",
-              titulo: "Método Consultoria de Automação Express",
-              descricao: "Pacote de mentoria focado em ensinar donos de clínicas locais a criarem suas próprias integrações simples usando Make.com e Typebot, reduzindo atritos de contratação externa."
-            },
-            {
-              categoria: "Assinatura / Serviço / Marketplace / Plataforma Digital",
-              titulo: "Plataforma de Freelancers Especializados em Automação",
-              descricao: "Um marketplace nichado conectando clínicas físicas a desenvolvedores no-code prontos para implementar assistentes virtuais de atendimento sob medida."
-            }
-          ],
-          modeloNegocio: "SaaS Recorrente (B2B SaaS) cobrando R$ 197,00/mês por clínica conectada + taxa única de setup de R$ 497,00.",
-          estrategia: "Prospecção ativa no Instagram de estúdios locais na sua cidade demonstrando a IA marcando um compromisso em menos de 1 minuto em formato de vídeo rápido.",
-          fasesExecucao: [
-            "FASE 01: DESCOBRIR A NECESSIDADE - Mapear clinicas sem atendimento automatizado via direct do Instagram.",
-            "FASE 02: ANALISAR O MERCADO - Levantar concorrentes locais de software de agendamento manual.",
-            "FASE 03: VALIDAR A OPORTUNIDADE - Oferecer o MVP gratuito por 7 dias para as 3 primeiras clínicas parceiras.",
-            "FASE 04: CRIAR A SOLUÇÃO - Montar o fluxo de conversa padrão no Typebot / Make / OpenAI.",
-            "FASE 05: DESENVOLVER O PRODUTO - Estruturar o painel web simples no Bubble ou Next.js para visualização da agenda.",
-            "FASE 06: CRIAR O MODELO DE NEGÓCIO - Configurar assinatura recorrente via Stripe ou Asaas.",
-            "FASE 07: IMPLEMENTAR AS AUTOMAÇÕES - Criar alertas automáticos de confirmação de presença com 24h de antecedência.",
-            "FASE 08: CRIAR AS CAMPANHAS - Gravar vídeos mostrando a redução no tempo de resposta das clínicas.",
-            "FASE 09: VALIDAR OS RESULTADOS - Coletar depoimento em vídeo dos primeiros donos de clínicas atendidos.",
-            "FASE 10: ESCALAR O PROJETO - Expandir para cidades vizinhas utilizando tráfego pago geolocalizado."
-          ],
-          potencialCrescimento: "Alto (Escalabilidade técnica de 95/100). Possibilidade de plugar novas APIs de chat facilmente.",
-          proximosPassos: [
-            "Criar conta gratuita no Make.com e Typebot.",
-            "Mapear 10 clínicas de estética próximas a você no Google Maps.",
-            "Montar um fluxo de demonstração rápida de agendamento por WhatsApp.",
-            "Gravar tela do celular simulando a IA respondendo o cliente."
-          ],
-          riscos: [
-            "Bloqueios de número de WhatsApp por atividade excessiva.",
-            "Dificuldade de adsão por parte de secretárias tradicionais."
-          ],
-          sugestoesMelhoria: [
-            "Utilizar a API Cloud Oficial da Meta para evitar banimentos de chips.",
-            "Oferecer treinamento presencial rápido para a equipe da clínica."
-          ],
-          notas: {
-            dor: 90,
-            urgencia: 88,
-            mercado: 95,
-            solucao: 85,
-            monetizacao: 80,
-            escalabilidade: 90,
-            concorrencia: 82,
-            potencial: 89,
-            idh: 89,
-            iso: 90,
-            final: 88
-          }
-        };
-      }
-      setResult(mockResult);
-      setScreen('dashboard');
-    } finally {
-      setIsLoading(false);
+      setSelectedStory(null);
+      setActiveTab('parents');
+      return;
     }
-  };
 
-  const handleAnalyzeLink = async (data: LinkAnalysisData) => {
-    setIsLoading(true);
-    const promptPayload = `Análise de Engenharia Reversa por Link:
-- URL do Concorrente: ${data.url}
-- Categoria de Produto: ${data.category}
-- Crítica / Observações do usuário: ${data.notes}`;
+    console.log("Gerando com foto da criança:", childPhoto ? "sim" : "não", "| foto do responsável:", parentPhoto ? "sim" : "não");
+    
+    let newStory: Story;
 
     try {
-      const geminiResult = await analyzeWithGemini(promptPayload);
-      setResult(geminiResult);
-      setScreen('dashboard');
-    } catch (e) {
-      console.warn("Usando fallback de dados locais (Chave Gemini vazia ou erro de rede).");
+      const response = await fetch(`${BACKEND_URL}/api/generate-story`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ theme, ageGroup, prompt, childPhoto, parentPhoto })
+      });
+      if (!response.ok) throw new Error("Erro na chamada de API do proxy");
+      const data = await response.json();
       
-      const mockResult: OpportunityResult = {
-        diagnostico: `Análise de Engenharia Reversa efetuada com sucesso para a URL fornecida (${data.url}). Identificamos um concorrente do tipo "${data.category}" no nicho de mercado. O seu diferencial competitivo sugerido é "${data.notes || 'Melhoria na usabilidade e velocidade de suporte'}". A melhor alternativa para competir sem alto investimento inicial é o desenvolvimento de um serviço automatizado sob assinatura.`,
-        necessidade: `Micro-SaaS de Atendimento Customizado Baseado no Concorrente ${data.url.replace(/https?:\/\/(www\.)?/, '').split('/')[0]}`,
-        urgencia: "90/100 - Oportunidade quente. O concorrente possui alto volume de buscas mas peca no pós-venda.",
-        potencialMercado: "Mercado local estimado em R$ 100k+ anuais em captação local.",
-        solucoes: [
-          {
-            categoria: "Automação / Robô WhatsApp",
-            titulo: "Agente Inteligente Alternativo de Contato Direto",
-            descricao: "Um assistente que responde e qualifica leads em 10 segundos, integrando o seu diferencial de mercado diretamente no atendimento no-code."
-          },
-          {
-            categoria: "Landing Page / Funil de Vendas",
-            titulo: "Página de Captura Ultra-Rápida",
-            descricao: "Página mobile otimizada com foco em dores ignoradas pela grande empresa de referência."
-          }
-        ],
-        modeloNegocio: "Assinatura recorrente mensal com checkout express via Pix (Mercado Pago / Asaas).",
-        estrategia: "Abordagem comercial demonstrativa oferecendo teste gratuito do robô com base na dor descrita.",
-        fasesExecucao: [
-          "FASE 01: DESCOBRIR A NECESSIDADE - Analisar os comentários negativos de usuários do concorrente.",
-          "FASE 02: ANALISAR O MERCADO - Mapear os preços cobrados pela referência.",
-          "FASE 03: VALIDAR A OPORTUNIDADE - Estruturar uma oferta de valor com preço 30% menor ou suporte humanizado.",
-          "FASE 04: CRIAR A SOLUÇÃO - Desenvolver o chatbot no-code simulando os mesmos recursos.",
-          "FASE 05: DESENVOLVER O PRODUTO - Hospedar a página de agendamentos em um servidor estável.",
-          "FASE 06: CRIAR O MODELO DE NEGÓCIO - Integrar gateways de pagamento Pix automático.",
-          "FASE 07: IMPLEMENTAR AS AUTOMAÇÕES - Criar fluxos de recuperação de carrinho no WhatsApp.",
-          "FASE 08: CRIAR AS CAMPANHAS - Gravar vídeos comparando sua ferramenta com o grande concorrente.",
-          "FASE 09: VALIDAR OS RESULTADOS - Coletar métricas de conversão das primeiras abordagens.",
-          "FASE 10: ESCALAR O PROJETO - Expandir a oferta criando anúncios para regiões geográficas vizinhas."
-        ],
-        potencialCrescimento: "Exponencial se focado em canais de suporte alternativos que a grande marca de referência ignora.",
-        proximosPassos: [
-          "Acessar a página oficial da referência e listar os 3 recursos mais comentados.",
-          "Procurar depoimentos e reclamações sobre o concorrente nas redes sociais.",
-          "Simular a compra na concorrência para entender o fluxo de e-mails deles.",
-          "Montar uma estrutura de site comparativo."
-        ],
-        riscos: [
-          "Retaliação comercial por parte do concorrente estabelecido.",
-          "Custo de aquisição de clientes insatisfeitos mais alto do que o esperado."
-        ],
-        sugestoesMelhoria: [
-          "Diferencie-se claramente na marca e no atendimento: seja o oposto de uma empresa fria.",
-          "Ofereça suporte 100% humanizado via WhatsApp."
-        ],
-        notas: {
-          dor: 92,
-          urgencia: 90,
-          mercado: 94,
-          solucao: 88,
-          monetizacao: 85,
-          escalabilidade: 90,
-          concorrencia: 80,
-          potencial: 91,
-          idh: 91,
-          iso: 92,
-          final: 90
+      if (data.status === 'fallback_mock') {
+        const title = prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt;
+        newStory = await storyService.generateStory(theme, ageGroup, title);
+      } else {
+        newStory = {
+          ...data,
+          createdAt: new Date(data.createdAt)
+        };
+      }
+    } catch (e) {
+      console.warn("Falha ao gerar história via API real. Utilizando gerador local como fallback:", e);
+      const title = prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt;
+      newStory = await storyService.generateStory(theme, ageGroup, title);
+    }
+    
+    // Save to state & localstorage
+    const updatedStories = [newStory, ...stories];
+    setStories(updatedStories);
+    localStorage.setItem('toontales_stories', JSON.stringify(updatedStories));
+
+    // Update usage or credits state
+    let updatedSub: UserSubscription;
+    if (currentUsage >= limits.maxStoriesPerMonth && (subscription.oneTimeCredits || 0) > 0) {
+      updatedSub = {
+        ...subscription,
+        oneTimeCredits: Math.max(0, (subscription.oneTimeCredits || 0) - 1)
+      };
+      alert("História gerada com sucesso consumindo 1 crédito avulso!");
+    } else {
+      updatedSub = {
+        ...subscription,
+        usage: {
+          ...subscription.usage,
+          storiesCreatedThisPeriod: currentUsage + 1
         }
       };
-      setResult(mockResult);
-      setScreen('dashboard');
-    } finally {
-      setIsLoading(false);
+    }
+    setSubscription(updatedSub);
+    localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+
+    // Open the story directly
+    setSelectedStory(newStory);
+  };
+
+  const handleSelectStory = (story: Story) => {
+    setSelectedStory(story);
+  };
+
+  const handleSelectPlan = (planType: PlanType, billingCycle: 'mensal' | 'anual') => {
+    const PLAN_LINKS: Record<string, Record<'mensal' | 'anual', string>> = {
+      hero: {
+        mensal: 'https://www.asaas.com/c/p4djxbmd3a1pa258',
+        anual: 'https://www.asaas.com/c/cessgiyswob8a47y'
+      },
+      professional: {
+        mensal: 'https://www.asaas.com/c/vrdfu5hi5k86ctp4',
+        anual: 'https://www.asaas.com/c/uyskuo3rmdhya6pl'
+      },
+      legendary: {
+        mensal: 'https://www.asaas.com/c/muqdti8nb8dtkbh7',
+        anual: 'https://www.asaas.com/c/he6m5q29enjyptne'
+      }
+    };
+
+    const targetUrl = PLAN_LINKS[planType]?.[billingCycle];
+    if (targetUrl) {
+      window.open(targetUrl, '_blank');
+      return;
+    }
+
+    let price = 0;
+    if (planType === 'hero') {
+      price = billingCycle === 'mensal' ? 49 : 39;
+    } else if (planType === 'legendary') {
+      price = billingCycle === 'mensal' ? 249 : 199;
+    } else {
+      price = billingCycle === 'mensal' ? 119 : 95;
+    }
+
+    setPendingPlan({ planType, billingCycle, price });
+    setShowCheckout(true);
+  };
+
+  const handleBuySingleStory = (_childName: string, theme: string, _ageGroup: string, childPhoto: string | null) => {
+    localStorage.setItem('toontales_pending_photo', childPhoto || '');
+    localStorage.setItem('toontales_pending_age', _ageGroup);
+    const price = theme === 'Livre' ? 29.00 : 19.90;
+    setPendingPlan({ planType: 'single_story', billingCycle: 'mensal', price });
+    setShowCheckout(true);
+  };
+
+  const handleCheckoutSuccess = (paymentMethod: 'pix' | 'credit_card') => {
+    if (!pendingPlan) return;
+
+    if (pendingPlan.planType === 'single_story') {
+      const updatedSub: UserSubscription = {
+        ...subscription,
+        oneTimeCredits: (subscription.oneTimeCredits || 0) + 1
+      };
+      setSubscription(updatedSub);
+      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+      alert("Crédito avulso de R$ 19,90 ativado com sucesso! Você pode criar ou baixar sua história agora.");
+      setShowCheckout(false);
+      setPendingPlan(null);
+      
+      // Auto enter studio library
+      setCurrentView('studio');
+      setActiveTab('create');
+      return;
+    }
+
+    const updatedSub: UserSubscription = {
+      planType: pendingPlan.planType as PlanType,
+      status: 'active',
+      currentPeriodStart: new Date().toISOString(),
+      currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+      usage: {
+        ...subscription.usage
+      },
+      cancelAtPeriodEnd: false,
+      paymentMethod,
+      billingCycle: pendingPlan.billingCycle
+    };
+
+    setSubscription(updatedSub);
+    localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+    setShowCheckout(false);
+    setPendingPlan(null);
+    setCurrentView('studio');
+    setActiveTab('parents');
+  };
+
+  const handleCancelSubscription = () => {
+    if (window.confirm("Tem certeza que deseja cancelar sua assinatura ativa? Seus benefícios expirarão no final do ciclo atual.")) {
+      const updatedSub: UserSubscription = {
+        ...subscription,
+        cancelAtPeriodEnd: true,
+        status: 'canceled'
+      };
+      setSubscription(updatedSub);
+      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
     }
   };
 
-  return (
-    <div className="app-wrapper-aio">
-      {/* Overlay de carregamento para geração por inteligência artificial */}
-      {isLoading && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          backgroundColor: 'rgba(8, 20, 45, 0.9)',
-          backdropFilter: 'blur(15px)',
-          zIndex: 9999,
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          color: 'white'
-        }}>
-          <div className="loading-spinner" style={{
-            width: '60px',
-            height: '60px',
-            border: '6px solid rgba(0, 200, 255, 0.1)',
-            borderTop: '6px solid #00C8FF',
-            borderRadius: '50%',
-            animation: 'spin 1s linear infinite',
-            marginBottom: '2rem'
-          }} />
-          <h3 style={{ fontSize: '1.5rem', fontWeight: 900, marginBottom: '0.5rem', letterSpacing: '-0.5px' }}>
-            R.I.O. está calculando a oportunidade...
-          </h3>
-          <p style={{ color: '#A0AEC0', fontSize: '0.95rem' }}>
-            Analisando mercado, estruturando cronogramas e integrando ferramentas.
-          </p>
-        </div>
-      )}
+  const handleDowngradeToFree = () => {
+    if (window.confirm("Deseja voltar para o plano gratuito imediatamente? Suas histórias não serão excluídas, mas os limites de criação voltarão ao padrão (2 por mês).")) {
+      const updatedSub: UserSubscription = {
+        planType: 'free',
+        status: 'free_tier',
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        usage: {
+          storiesCreatedThisPeriod: stories.length,
+          videosCreatedThisPeriod: 0
+        },
+        cancelAtPeriodEnd: false,
+        billingCycle: 'mensal'
+      };
+      setSubscription(updatedSub);
+      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+    }
+  };
 
-      {screen === 'landing' && (
-        <AioPremiumLanding 
-          onStartQuiz={() => setScreen('quiz')} 
-          onStartLinkAnalysis={() => setScreen('link_input')}
-          onNavigateAdmin={() => setScreen('admin')}
-        />
-      )}
-      {screen === 'quiz' && (
-        <AioQuiz onFinishQuiz={handleFinishQuiz} onBack={() => setScreen('landing')} />
-      )}
-      {screen === 'link_input' && (
-        <AioLinkAnalyzer onAnalyzeLink={handleAnalyzeLink} onBack={() => setScreen('landing')} />
-      )}
-      {screen === 'dashboard' && result && (
-        <AioDashboard 
-          result={result} 
-          onReset={() => setScreen('landing')} 
-          onSaveLead={handleSaveLead}
-        />
-      )}
-      
-      {/* PAINEL ADMIN DE LEADS LOCAL */}
-      {screen === 'admin' && (
-        <div className="quiz-container" style={{ maxWidth: '600px', padding: '2rem' }}>
-          <header className="quiz-header" style={{ marginBottom: '2rem', textAlign: 'center' }}>
-            <button className="btn-back" onClick={() => setScreen('landing')} style={{ display: 'inline-block', marginBottom: '1rem' }}>
-              ← Voltar para Site
+  const handleLoginSuccess = (_email: string, role: 'admin' | 'user') => {
+    const updatedSession = AuthService.getSession();
+    setSession(updatedSession);
+    if (role === 'admin') {
+      setCurrentView('admin');
+    } else {
+      setCurrentView('studio');
+      setActiveTab('create');
+    }
+  };
+
+  const handleLogout = () => {
+    AuthService.clearSession();
+    setSession(null);
+    setCurrentView('landing');
+    setSelectedStory(null);
+  };
+
+  if (currentView === 'landing') {
+    return (
+      <div className="min-h-screen bg-[#F0F4F8] text-[#1E293B] font-sans antialiased">
+        {/* Floating Landing Header with Login Button */}
+        <header className="bg-white/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-200/60 shadow-sm px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setCurrentView('landing'); setSelectedStory(null); }}>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 shadow-md shadow-amber-300/40 flex items-center justify-center text-white font-black text-xl font-serif">
+              T
+            </div>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight text-slate-800 font-serif">ToonTales</span>
+              <span className="text-xs font-bold text-amber-500 block -mt-1 uppercase tracking-widest text-[9px]">AI Studio</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <a href="#planos" className="text-xs font-black text-slate-500 hover:text-slate-800 uppercase tracking-wider px-3 py-2">Planos</a>
+            <button
+              onClick={() => setCurrentView('login')}
+              className="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all"
+            >
+              Entrar no Estúdio 🔑
             </button>
-            <h2 style={{ margin: 0, fontSize: '1.6rem', fontWeight: 900 }}>Acesso Administrativo A.I.O. 🔒</h2>
-          </header>
+          </div>
+        </header>
+        
+        <LandingPage 
+          onEnterStudio={() => {
+            if (session) {
+              setCurrentView('studio');
+            } else {
+              setCurrentView('login');
+            }
+          }} 
+          onSelectPlan={handleSelectPlan}
+          onBuySingleStory={handleBuySingleStory}
+        />
+      </div>
+    );
+  }
 
-          {!isAdminAuthed ? (
-            <main className="dashboard-card shadow-premium" style={{ background: 'rgba(255,255,255,0.02)', padding: '2.5rem 2rem', borderRadius: '20px', border: '1px solid rgba(255,255,255,0.05)' }}>
-              <p style={{ textAlign: 'center', fontSize: '0.9rem', color: '#CBD5E0', marginBottom: '2rem' }}>Apenas usuários autorizados podem visualizar os contatos capturados pela plataforma.</p>
-              
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#A0AEC0' }}>E-mail</label>
-                  <input 
-                    type="email" 
-                    placeholder="exemplo@gmail.com" 
-                    value={emailInput}
-                    onChange={e => setEmailInput(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem 1rem', borderRadius: '10px', color: 'white', fontSize: '1rem' }}
-                  />
-                </div>
+  if (currentView === 'login') {
+    return (
+      <div className="min-h-screen bg-[#F0F4F8] flex items-center justify-center">
+        <LoginScreen 
+          onLoginSuccess={handleLoginSuccess}
+          onBack={() => setCurrentView('landing')}
+        />
+      </div>
+    );
+  }
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                  <label style={{ fontSize: '0.85rem', fontWeight: 700, color: '#A0AEC0' }}>Senha</label>
-                  <input 
-                    type="password" 
-                    placeholder="••••••••" 
-                    value={passwordInput}
-                    onChange={e => setPasswordInput(e.target.value)}
-                    style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.1)', padding: '0.75rem 1rem', borderRadius: '10px', color: 'white', fontSize: '1rem' }}
-                  />
-                </div>
+  if (currentView === 'admin') {
+    return (
+      <div className="min-h-screen bg-[#F0F4F8] pb-12">
+        <header className="bg-slate-900 sticky top-0 z-50 px-6 py-4 flex items-center justify-between border-b border-slate-800 shadow-md text-white">
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => setCurrentView('admin')}>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 shadow-md flex items-center justify-center text-white font-black text-xl font-serif">
+              A
+            </div>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight font-serif text-white">ToonTales Admin</span>
+              <span className="text-xs font-bold text-amber-400 block -mt-1 uppercase tracking-widest text-[8px]">Painel de Controle</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={() => {
+                // Allow admin to also view the studio tab if they want to test creation
+                setCurrentView('studio');
+                setActiveTab('create');
+              }}
+              className="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white font-bold text-xs rounded-xl border border-slate-700/50"
+            >
+              Ir para o Estúdio 🎨
+            </button>
+            <button 
+              onClick={handleLogout}
+              className="px-4 py-2 bg-red-650 hover:bg-red-700 text-white font-bold text-xs rounded-xl"
+            >
+              Sair
+            </button>
+          </div>
+        </header>
+        <main className="mt-8">
+          <AdminDashboard onLogout={handleLogout} />
+        </main>
+      </div>
+    );
+  }
 
-                <button 
-                  className="btn-primary-aio" 
-                  onClick={() => {
-                    if (emailInput === 'nogueiralfha@gmail.com' && passwordInput === 'missionario405') {
-                      setIsAdminAuthed(true);
-                      loadFirebaseLeads(); // Carrega os leads do Firestore
-                    } else {
-                      alert("Credenciais administrativas incorretas. Acesso negado.");
-                    }
-                  }}
-                  style={{ padding: '0.85rem', fontSize: '1rem', fontWeight: 800, marginTop: '1rem' }}
+  // Render Studio (For standard user/authenticated clients, and admin testing)
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-slate-100 font-sans antialiased pb-12">
+      {/* Premium Header/Navigation */}
+      <header className="bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 border-b border-slate-900 shadow-lg">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between flex-wrap gap-4">
+          {/* Logo */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => { setCurrentView('landing'); setSelectedStory(null); }}>
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-400 to-amber-500 shadow-lg shadow-amber-500/20 flex items-center justify-center text-white font-black text-xl font-serif">
+              T
+            </div>
+            <div>
+              <span className="text-xl font-extrabold tracking-tight text-white font-serif">ToonTales</span>
+              <span className="text-xs font-bold text-amber-400 block -mt-1 uppercase tracking-widest text-[9px]">
+                {subscription.planType === 'free' ? 'AI Studio' : `${subscription.planType} Tier`}
+              </span>
+            </div>
+          </div>
+
+          {/* Navigation Links */}
+          <div className="flex items-center gap-2 max-w-full">
+            <div className="flex bg-slate-900/60 border border-slate-800/80 p-1 rounded-xl gap-1 overflow-x-auto scrollbar-none max-w-[240px] xs:max-w-[320px] sm:max-w-none">
+              <button
+                onClick={() => { setCurrentView('landing'); setSelectedStory(null); }}
+                className="px-4 py-2 rounded-lg font-bold text-xs md:text-sm text-slate-400 hover:text-white transition-all"
+              >
+                Início
+              </button>
+              <button
+                onClick={() => { setSelectedStory(null); setActiveTab('create'); }}
+                className={`px-4 py-2 rounded-lg font-bold text-xs md:text-sm transition-all ${
+                  activeTab === 'create' && !selectedStory
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Criar Livro/Vídeo
+              </button>
+              <button
+                onClick={() => { setSelectedStory(null); setActiveTab('library'); }}
+                className={`px-4 py-2 rounded-lg font-bold text-xs md:text-sm transition-all flex items-center gap-1.5 ${
+                  activeTab === 'library' && !selectedStory
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Biblioteca ({stories.length})
+              </button>
+              <button
+                onClick={() => { setSelectedStory(null); setActiveTab('parents'); }}
+                className={`px-4 py-2 rounded-lg font-bold text-xs md:text-sm transition-all ${
+                  activeTab === 'parents' && !selectedStory
+                    ? 'bg-slate-800 text-white'
+                    : 'text-slate-400 hover:text-white'
+                }`}
+              >
+                Painel dos Pais
+              </button>
+            </div>
+
+            {/* Admin Back Link or User Profile Logout */}
+            <div className="flex items-center gap-2 ml-2 pl-3 border-l border-slate-800">
+              {session?.role === 'admin' && (
+                <button
+                  onClick={() => setCurrentView('admin')}
+                  className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-[10px] rounded-lg uppercase tracking-wider transition-all"
                 >
-                  Entrar no Painel 🔓
+                  Admin 🛠️
                 </button>
-              </div>
-            </main>
-          ) : (
-            <main className="dashboard-card shadow-premium" style={{ background: 'rgba(255,255,255,0.02)', padding: '2rem', borderRadius: '20px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <div>
-                  <h3 style={{ fontSize: '1.25rem', margin: 0 }}>Lista de Contatos Recentes</h3>
-                  <p style={{ fontSize: '0.85rem', color: '#A0AEC0', margin: 0 }}>Estes números de WhatsApp foram coletados na Dashboard para liberar o acesso.</p>
-                </div>
-                <button 
-                  className="btn-action-trigger" 
-                  onClick={() => {
-                    const text = firebaseLeads.map(l => `${l.createdAt} - WhatsApp: ${l.whatsapp} - Idéia de Negócio: ${l.idea}`).join('\n');
-                    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
-                    const link = document.createElement('a');
-                    link.href = url;
-                    link.download = `Leads-Capturados-AIO.txt`;
-                    link.click();
-                    URL.revokeObjectURL(url);
-                  }}
-                >
-                  Exportar Leads (.txt) 📥
-                </button>
-              </div>
-
-              {firebaseLeads.length === 0 ? (
-                <p style={{ textAlign: 'center', color: '#A0AEC0', padding: '3rem 0', fontStyle: 'italic' }}>Nenhum número de WhatsApp capturado ainda.</p>
-              ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                  {firebaseLeads.map((lead) => (
-                    <div key={lead.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', padding: '1rem', borderRadius: '10px', fontSize: '0.9rem' }}>
-                      <div>
-                        <span style={{ fontWeight: 800, fontSize: '1rem', color: '#00C8FF', display: 'block' }}>{lead.whatsapp}</span>
-                        <span style={{ fontSize: '0.75rem', color: '#CBD5E0' }}>Idéia de interesse: {lead.idea}</span>
-                      </div>
-                      <span style={{ fontSize: '0.75rem', color: '#A0AEC0' }}>{lead.createdAt}</span>
-                    </div>
-                  ))}
-                </div>
               )}
-            </main>
-          )}
+              <span className="text-[10px] font-black text-slate-400 uppercase hidden md:block">
+                {session?.email.split('@')[0]}
+              </span>
+              <button 
+                onClick={handleLogout}
+                className="w-8 h-8 rounded-full bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800/80 flex items-center justify-center text-xs transition-all cursor-pointer"
+                title="Sair da Conta"
+              >
+                🚪
+              </button>
+            </div>
+          </div>
         </div>
+      </header>
+
+      {/* Main Content Area */}
+      <main className="max-w-6xl mx-auto px-6 mt-8">
+        {selectedStory ? (
+          <StoryViewer story={selectedStory} onBack={() => setSelectedStory(null)} />
+        ) : (
+          <>
+            {activeTab === 'create' && (
+              <StoryCreator onGenerate={handleGenerateStory} />
+            )}
+
+            {activeTab === 'library' && (
+              <div className="flex flex-col gap-6">
+                <div className="flex justify-between items-center flex-wrap gap-4">
+                  <div>
+                    <h2 className="text-3xl font-extrabold text-white font-serif">Minhas Histórias</h2>
+                    <p className="text-slate-400 text-sm">Biblioteca completa das aventuras criadas para as crianças.</p>
+                  </div>
+                  <button 
+                    onClick={() => setActiveTab('create')}
+                    className="px-5 py-3 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold rounded-2xl shadow-lg shadow-orange-500/10 hover:shadow-xl transition-all flex items-center gap-2 cursor-pointer"
+                  >
+                    + Nova História
+                  </button>
+                </div>
+
+                {stories.length === 0 ? (
+                  <div className="text-center p-16 bg-slate-900/40 backdrop-blur-md border border-slate-800 rounded-[2.5rem] shadow-md max-w-xl mx-auto mt-6">
+                    <div className="w-16 h-16 bg-amber-500/10 border border-amber-500/20 rounded-2xl flex items-center justify-center text-amber-500 mx-auto mb-4">
+                      <svg className="w-8 h-8 text-amber-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                    </div>
+                    <h3 className="text-xl font-bold text-white">Biblioteca Vazia</h3>
+                    <p className="text-slate-400 text-sm mt-1 mb-6">Você ainda não gerou nenhuma história. Comece agora!</p>
+                    <button 
+                      onClick={() => setActiveTab('create')}
+                      className="px-6 py-3.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold rounded-2xl transition-all shadow-md cursor-pointer"
+                    >
+                      Criar Primeira História
+                    </button>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-4">
+                    {stories.map((story) => (
+                      <div 
+                        key={story.id}
+                        onClick={() => handleSelectStory(story)}
+                        className="bg-slate-900/40 backdrop-blur-md rounded-[2rem] overflow-hidden border border-slate-800/80 shadow-md hover:shadow-[0_0_30px_rgba(245,158,11,0.1)] hover:border-slate-700/80 hover:scale-102 transition-all duration-300 cursor-pointer flex flex-col justify-between group"
+                      >
+                        {/* Cover thumbnail */}
+                        <div className="aspect-[4/3] bg-slate-950 flex items-center justify-center p-4 relative overflow-hidden">
+                          {story.scenes[0].illustrationUrl ? (
+                            <img 
+                              src={story.scenes[0].illustrationUrl} 
+                              alt="Capa"
+                              className="w-full h-full object-cover pointer-events-none select-none group-hover:scale-105 transition-all duration-300"
+                            />
+                          ) : (
+                            <div 
+                              className="w-full h-full pointer-events-none select-none group-hover:scale-105 transition-all duration-300"
+                              dangerouslySetInnerHTML={{ __html: story.scenes[0].illustrationSvg }}
+                            />
+                          )}
+                          <span className={`absolute top-4 left-4 px-3 py-1 rounded-full text-[10px] font-black text-white uppercase tracking-wider shadow-sm ${
+                            story.theme === 'Bíblico' ? 'bg-emerald-500/80 border border-emerald-400/30' :
+                            story.theme === 'Aventura' ? 'bg-amber-500/80 border border-amber-400/30' :
+                            'bg-sky-500/80 border border-sky-400/30'
+                          }`}>
+                            {story.theme}
+                          </span>
+                        </div>
+
+                        {/* Story info */}
+                        <div className="p-5 flex-1 flex flex-col justify-between bg-slate-950/20">
+                          <div>
+                            <h4 className="text-base font-extrabold text-white line-clamp-2 leading-snug font-serif">
+                              {story.title}
+                            </h4>
+                            <p className="text-slate-450 text-xs mt-1.5 font-semibold">
+                              Faixa {story.ageGroup} • {story.scenes.length} cenas
+                            </p>
+                          </div>
+                          
+                          <div className="flex gap-1.5 mt-4 pt-4 border-t border-slate-800/60">
+                            <span className="px-2 py-0.5 bg-slate-900 text-slate-400 text-[9px] font-black rounded-md uppercase tracking-wide border border-slate-800">
+                              Vídeo
+                            </span>
+                            <span className="px-2 py-0.5 bg-slate-900 text-slate-400 text-[9px] font-black rounded-md uppercase tracking-wide border border-slate-800">
+                              Livro
+                            </span>
+                            <span className="px-2 py-0.5 bg-slate-900 text-slate-400 text-[9px] font-black rounded-md uppercase tracking-wide border border-slate-800">
+                              Colorir
+                            </span>
+                            <span className="px-2 py-0.5 bg-slate-900 text-slate-400 text-[9px] font-black rounded-md uppercase tracking-wide border border-slate-800">
+                              Áudio
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {activeTab === 'parents' && (
+              <ParentDashboard 
+                stories={stories} 
+                onSelectStory={handleSelectStory} 
+                subscription={subscription}
+                onSelectPlan={handleSelectPlan}
+                onCancelSubscription={handleCancelSubscription}
+                onDowngradeToFree={handleDowngradeToFree}
+              />
+            )}
+          </>
+        )}
+      </main>
+
+      {/* Render Checkout Modal */}
+      {showCheckout && pendingPlan && (
+        <CheckoutModal
+          planType={pendingPlan.planType}
+          billingCycle={pendingPlan.billingCycle}
+          price={pendingPlan.price}
+          userEmail={session?.email || 'cliente@toontales.com'}
+          isAdultHomenagem={pendingPlan.planType === 'single_story' && localStorage.getItem('toontales_pending_age') === 'adulto'}
+          onClose={() => {
+            setShowCheckout(false);
+            setPendingPlan(null);
+          }}
+          onSuccess={handleCheckoutSuccess}
+        />
       )}
+      {/* Floating WhatsApp Support Button */}
+      <a
+        href="https://wa.me/5516997327255?text=preciso%20de%20infoma%C3%A7oes%20sobre%20a%20platforma%20Toontales%3F"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="fixed bottom-6 right-6 z-[90] w-14 h-14 bg-emerald-500 hover:bg-emerald-650 rounded-full shadow-2xl flex items-center justify-center text-white hover:scale-105 transition-all duration-300 group cursor-pointer"
+        title="Falar no WhatsApp"
+      >
+        {/* WhatsApp Icon SVG */}
+        <svg className="w-8 h-8 fill-current" viewBox="0 0 24 24">
+          <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.514 2.266 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.724-1.457L0 24zm6.59-4.846c1.6.95 3.188 1.449 4.825 1.451 5.436 0 9.86-4.42 9.863-9.864.001-2.63-1.023-5.101-2.883-6.963C16.588 1.964 14.118.94 11.488.94c-5.43 0-9.85 4.417-9.853 9.86-.001 1.737.478 3.43 1.387 4.932L2.003 21.07l5.44-.816zM18.86 15.29c-.326-.163-1.934-.954-2.227-1.061-.293-.106-.507-.16-.72.162-.213.325-.826 1.061-1.013 1.277-.187.213-.373.24-.7.077-1.919-.96-3.11-1.685-4.18-3.52-.28-.481.28-.447.801-1.486.087-.163.04-.306-.02-.469-.06-.163-.507-1.226-.694-1.68-.186-.45-.373-.39-.507-.39-.133-.003-.28-.003-.426-.003-.147 0-.387.054-.587.271-.2.213-.76.743-.76 1.81 0 1.067.773 2.1 1.88 2.247 1.107.147 2.127.818 2.127 1.816 0 1.08-.2 1.94-.4 2.14a.8.8 0 0 1-.587.271z"/>
+        </svg>
+        <span className="absolute right-16 bg-slate-900 text-white text-[10px] font-black py-1.5 px-3 rounded-xl opacity-0 group-hover:opacity-100 whitespace-nowrap transition-all duration-300 border border-slate-800 shadow-md">
+          Suporte no WhatsApp 🟢
+        </span>
+      </a>
     </div>
   );
 };

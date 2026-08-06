@@ -24,3 +24,10 @@ dist-ssr
 *.sw?
 
 .agents/
+
+# Env files
+.env
+.env.local
+.env.*.local
+.env.production
+.env.development
