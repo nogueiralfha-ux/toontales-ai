@@ -287,7 +287,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             });
 
             const base64Audio = audioBuffer.toString('base64');
-            audioUrl = `data:audio/mp3;base64,${base64Audio}`;
+            audioUrl = `data:audio/mpeg;base64,${base64Audio}`;
           }
         } catch (errAudio) {
           console.error(`Erro ao gerar áudio:`, errAudio);

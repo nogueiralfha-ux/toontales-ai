@@ -105,6 +105,7 @@ export const LocalSecureApp: React.FC = () => {
   ) => {
     const limits = PLAN_LIMITS[subscription.planType];
     const currentUsage = subscription.usage.storiesCreatedThisPeriod;
+    const hasCredits = (subscription.oneTimeCredits || 0) > 0;
     const isAdmin = session?.role === 'admin';
 
     if (currentUsage >= limits.maxStoriesPerMonth && !hasCredits && !isAdmin) {

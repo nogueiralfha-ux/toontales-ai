@@ -21,6 +21,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
   const [isAudioPlaying, setIsAudioPlaying] = useState(false);
   const [audioSpeed, setAudioSpeed] = useState<number>(1);
   const [waveSeed, setWaveSeed] = useState<number[]>([]);
+  const [currentAudioScene, setCurrentAudioScene] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   // Initialize random height multipliers for audio wave
@@ -37,7 +38,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
     } else {
       audio.pause();
     }
-  }, [isAudioPlaying]);
+  }, [isAudioPlaying, currentAudioScene]);
 
   useEffect(() => {
     const audio = audioRef.current;
@@ -334,12 +335,15 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
               )}
             </div>
 
-            <div>
-              <span className="text-[9px] uppercase tracking-widest font-black bg-sky-50 text-sky-600 px-3 py-1 rounded-full border border-sky-100/50">
-                Áudio Narrado
+            {/* Book metadata & current text reading */}
+            <div className="text-center px-6 max-w-md">
+              <span className="px-4 py-1.5 bg-sky-500/10 text-sky-500 rounded-full text-[10px] font-black uppercase tracking-wider border border-sky-400/10">
+                Áudio Livro • Página {currentAudioScene + 1} de {story.scenes.length} 🎧
               </span>
-              <h3 className="text-2xl font-black text-slate-800 font-serif mt-3">{story.title}</h3>
-              <p className="text-slate-400 font-semibold text-xs mt-1">Sinfonia de Fundo • Edição Pedagógica</p>
+              <h3 className="text-xl font-black text-slate-850 font-serif mt-3 leading-snug">{story.title}</h3>
+              <p className="text-slate-500 font-bold text-xs mt-3 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
+                "{story.scenes[currentAudioScene]?.text}"
+              </p>
             </div>
 
             {/* Premium Animated Sound Wave */}
@@ -399,12 +403,21 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
               </button>
             </div>
 
-            {story.audioUrl && (
+            {story.scenes[currentAudioScene]?.audioUrl && (
               <audio
                 ref={audioRef}
-                src={story.audioUrl}
+                src={story.scenes[currentAudioScene].audioUrl}
                 onTimeUpdate={(e) => setAudioTimer((e.target as HTMLAudioElement).currentTime)}
-                onEnded={() => setIsAudioPlaying(false)}
+                onEnded={() => {
+                  if (currentAudioScene < story.scenes.length - 1) {
+                    setCurrentAudioScene(prev => prev + 1);
+                    setAudioTimer(0);
+                  } else {
+                    setIsAudioPlaying(false);
+                    setCurrentAudioScene(0);
+                    setAudioTimer(0);
+                  }
+                }}
               />
             )}
           </div>
