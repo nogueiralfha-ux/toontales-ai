@@ -60,8 +60,9 @@ const DEFAULT_CONFIG: TaceEngineConfig = {
     
     // Image IAs
     { modelId: 'flux-schnell', name: 'Flux Schnell', provider: 'fal', baseCostTc: 8, isActive: true, priority: 1 },
-    { modelId: 'flux-dev', name: 'Flux Dev', provider: 'fal', baseCostTc: 20, isActive: true, priority: 2 },
-    { modelId: 'dall-e-3', name: 'DALL-E 3', provider: 'openai', baseCostTc: 60, isActive: true, priority: 3 },
+    { modelId: 'imagen-3', name: 'Google Imagen 3', provider: 'google', baseCostTc: 12, isActive: true, priority: 2 },
+    { modelId: 'flux-dev', name: 'Flux Dev', provider: 'fal', baseCostTc: 20, isActive: true, priority: 3 },
+    { modelId: 'dall-e-3', name: 'DALL-E 3', provider: 'openai', baseCostTc: 60, isActive: true, priority: 4 },
 
     // Audio IAs
     { modelId: 'google-tts', name: 'Google Text-to-Speech', provider: 'google', baseCostTc: 5, isActive: true, priority: 1 },
@@ -233,6 +234,7 @@ export class TaceEngine {
     let filtered = config.models.filter(m => {
       if (!m.isActive) return false;
       if (resource === 'story' && (m.modelId.includes('gemini') || m.modelId.includes('gpt-4'))) return true;
+      if (resource === 'coloring' && (m.modelId.includes('flux') || m.modelId.includes('imagen') || m.modelId.includes('dall-e'))) return true;
       if (resource === 'video' && m.modelId.includes('video')) return true;
       if (resource === 'audio' && m.modelId.includes('tts')) return true;
       return false;

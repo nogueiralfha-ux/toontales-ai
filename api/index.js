@@ -182,7 +182,7 @@ export default async function handler(req, res) {
 
     // 3. Generate Story using Real AI APIs (OpenAI + Fal.ai/Replicate)
     else if (req.method === 'POST' && pathname === '/api/generate-story') {
-      const { theme, ageGroup, prompt, childPhoto, parentPhoto, modelId } = req.body;
+      const { theme, ageGroup, prompt, childPhoto, parentPhoto, modelId, imageModelId } = req.body;
 
       const openAiKey = process.env.OPENAI_API_KEY;
       const replicateKey = process.env.REPLICATE_API_KEY;
@@ -190,7 +190,7 @@ export default async function handler(req, res) {
       const geminiKey = process.env.GEMINI_API_KEY;
 
       const hasTextKey = (openAiKey && !openAiKey.includes('sua_chave')) || (geminiKey && !geminiKey.includes('sua_chave'));
-      const hasImageKey = (replicateKey && !replicateKey.includes('sua_chave')) || (falKey && !falKey.includes('sua_chave'));
+      const hasImageKey = (replicateKey && !replicateKey.includes('sua_chave')) || (falKey && !falKey.includes('sua_chave')) || (geminiKey && !geminiKey.includes('sua_chave'));
 
       if (!hasTextKey || !hasImageKey) {
         console.log("[AI Proxy] Chaves não configuradas. Executando fallback mockado...");
@@ -298,7 +298,53 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
 
         // Step A: Generate Image
         try {
-          if (falKey) {
+          const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
+          
+          if (useImagen && geminiKey && !geminiKey.includes('sua_chave')) {
+            console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
+            const promptValue = `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
+            
+            const imagenResponse = await new Promise((resolve, reject) => {
+              const reqPost = https.request({
+                method: 'POST',
+                hostname: 'generativelanguage.googleapis.com',
+                path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                headers: { 'Content-Type': 'application/json' }
+              }, (resPost) => {
+                let resData = '';
+                resPost.on('data', chunk => resData += chunk);
+                resPost.on('end', () => {
+                  try {
+                    resolve(JSON.parse(resData));
+                  } catch (e) {
+                    reject(e);
+                  }
+                });
+              });
+              reqPost.on('error', reject);
+              reqPost.write(JSON.stringify({
+                instances: [
+                  {
+                    prompt: promptValue
+                  }
+                ],
+                parameters: {
+                  sampleCount: 1,
+                  aspectRatio: "16:9",
+                  outputMimeType: "image/jpeg"
+                }
+              }));
+              reqPost.end();
+            });
+
+            if (imagenResponse.predictions && imagenResponse.predictions[0]) {
+              imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            } else if (imagenResponse.error) {
+              throw new Error(imagenResponse.error.message || "Erro desconhecido do Google Imagen 3");
+            } else {
+              throw new Error("Imagen 3 não retornou dados de imagem em predictions.");
+            }
+          } else if (falKey && !falKey.includes('sua_chave')) {
             console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Fal.ai...`);
             const isConsistent = childPhoto || parentPhoto;
             const bodyObj = isConsistent ? {

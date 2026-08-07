@@ -389,6 +389,7 @@ export const LocalSecureApp: React.FC = () => {
 
     // TACE AI Router - Seleciona melhor IA de acordo com qualidade
     const bestModel = TaceEngine.selectBestModel('story', quality);
+    const bestImageModel = TaceEngine.selectBestModel('coloring', quality);
 
     // TACE Credit Engine - Valida e debita créditos do usuário
     const deductResult = TaceEngine.deductCredits(
@@ -414,7 +415,15 @@ export const LocalSecureApp: React.FC = () => {
       const response = await fetch(`${BACKEND_URL}/api/generate-story`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme, ageGroup, prompt, childPhoto, parentPhoto, modelId: bestModel.modelId })
+        body: JSON.stringify({ 
+          theme, 
+          ageGroup, 
+          prompt, 
+          childPhoto, 
+          parentPhoto, 
+          modelId: bestModel.modelId,
+          imageModelId: bestImageModel.modelId
+        })
       });
       if (!response.ok) {
         const errText = await response.text();
