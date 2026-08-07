@@ -454,7 +454,53 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             }
           }
         } catch (errImg) {
-          console.error(`Erro ao gerar imagem:`, errImg);
+          console.error(`Fal.ai falhou, tentando Google Imagen 3 como contingência...`, errImg);
+          try {
+            if (geminiKey && !geminiKey.includes('sua_chave')) {
+              console.log(`[AI Proxy Contingência] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
+              const promptValue = `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
+              
+              const imagenResponse = await new Promise((resolve, reject) => {
+                const reqPost = https.request({
+                  method: 'POST',
+                  hostname: 'generativelanguage.googleapis.com',
+                  path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                  headers: { 'Content-Type': 'application/json' }
+                }, (resPost) => {
+                  let resData = '';
+                  resPost.on('data', chunk => resData += chunk);
+                  resPost.on('end', () => {
+                    try {
+                      resolve(JSON.parse(resData));
+                    } catch (e) {
+                      reject(e);
+                    }
+                  });
+                });
+                reqPost.on('error', reject);
+                reqPost.write(JSON.stringify({
+                  instances: [
+                    {
+                      prompt: promptValue
+                    }
+                  ],
+                  parameters: {
+                    sampleCount: 1,
+                    aspectRatio: "16:9",
+                    outputMimeType: "image/jpeg"
+                  }
+                }));
+                reqPost.end();
+              });
+
+              if (imagenResponse.predictions && imagenResponse.predictions[0]) {
+                imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+                console.log(`[AI Proxy Contingência] Imagem gerada com sucesso via Google Imagen 3 para cena ${scene.pageNumber}!`);
+              }
+            }
+          } catch (imagenErr) {
+            console.error("Contingência do Google Imagen 3 também falhou:", imagenErr);
+          }
         }
 
         // Step B: Generate Audio and convert to base64 Data URI (serverless friendly)
