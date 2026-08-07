@@ -66,8 +66,12 @@ export const AuthService = {
     // Gravar no Firestore
     try {
       await saveUserToFirestore(trimmedEmail, name.trim(), trimmedWhatsapp);
-    } catch (firebaseErr) {
-      console.warn("Falha ao sincronizar com Firestore, salvando apenas localmente:", firebaseErr);
+    } catch (firebaseErr: any) {
+      console.error("Falha ao sincronizar com Firestore:", firebaseErr);
+      return { 
+        success: false, 
+        message: `Erro ao salvar na nuvem (Firebase): ${firebaseErr.message || firebaseErr}. Verifique as regras de segurança do Firestore.` 
+      };
     }
 
     const newUser: RegisteredUser = {
