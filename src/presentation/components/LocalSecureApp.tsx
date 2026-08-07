@@ -250,6 +250,8 @@ export const LocalSecureApp: React.FC = () => {
   const handleBuySingleStory = (_childName: string, theme: string, _ageGroup: string, childPhoto: string | null) => {
     localStorage.setItem('toontales_pending_photo', childPhoto || '');
     localStorage.setItem('toontales_pending_age', _ageGroup);
+    localStorage.setItem('toontales_pending_theme', theme);
+    localStorage.setItem('toontales_pending_name', _childName);
     
     // Vídeos acima de 4 minutos (faixa etária Adulto) cobram R$ 59,00
     const isLongVideo = _ageGroup === 'adulto';
@@ -269,13 +271,28 @@ export const LocalSecureApp: React.FC = () => {
       };
       setSubscription(updatedSub);
       localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
-      alert(`Crédito avulso de R$ ${pendingPlan.price.toFixed(2)} ativado com sucesso! Você pode criar ou baixar sua história agora.`);
+      
       setShowCheckout(false);
       setPendingPlan(null);
+
+      // Auto-geração do livro utilizando os parâmetros salvos no simulador
+      const pendingName = localStorage.getItem('toontales_pending_name') || 'Amiguinho';
+      const pendingTheme = localStorage.getItem('toontales_pending_theme') || 'Aventura';
+      const pendingAge = localStorage.getItem('toontales_pending_age') || '2-6';
+      const pendingPhoto = localStorage.getItem('toontales_pending_photo') || null;
+
+      alert(`Pagamento Confirmado! Criando sua história completa de homenagem para "${pendingName}" agora...`);
       
-      // Auto enter studio library
+      handleGenerateStory(
+        pendingTheme as any,
+        pendingAge as any,
+        `Escreva uma linda homenagem personalizada para ${pendingName}.`,
+        pendingPhoto,
+        null
+      );
+      
       setCurrentView('studio');
-      setActiveTab('create');
+      setActiveTab('library');
       return;
     }
 

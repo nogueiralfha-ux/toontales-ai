@@ -198,11 +198,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
                 <img 
                   src={story.scenes[currentVideoScene].illustrationUrl} 
                   alt={`Cena ${currentVideoScene + 1}`}
-                  className="w-full h-full object-cover pointer-events-none select-none transition-all duration-700 transform hover:scale-101"
+                  className={`w-full h-full object-cover pointer-events-none select-none transition-all duration-700 ${isVideoPlaying ? 'animate-cinematic-video' : 'transform hover:scale-101'}`}
                 />
               ) : (
                 <div 
-                  className="w-full h-full pointer-events-none select-none transition-all duration-700 transform hover:scale-101"
+                  className={`w-full h-full pointer-events-none select-none transition-all duration-700 ${isVideoPlaying ? 'animate-cinematic-video' : 'transform hover:scale-101'}`}
                   dangerouslySetInnerHTML={{ __html: story.scenes[currentVideoScene].illustrationSvg }}
                 />
               )}

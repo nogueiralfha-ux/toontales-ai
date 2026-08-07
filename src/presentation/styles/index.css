@@ -37,3 +37,18 @@ img, svg {
     opacity: .8;
   }
 }
+@keyframes kenburns {
+  0% {
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    transform: scale(1.15) translate(-1.5%, -1%);
+  }
+  100% {
+    transform: scale(1) translate(0, 0);
+  }
+}
+
+.animate-cinematic-video {
+  animation: kenburns 15s ease-in-out infinite;
+}
