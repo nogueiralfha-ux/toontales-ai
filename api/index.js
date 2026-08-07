@@ -233,11 +233,24 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           reqPost.end();
         });
 
+        let rawContent = '';
         try {
-          storyTextData = JSON.parse(openAiResponse.choices[0].message.content);
+          rawContent = openAiResponse.choices[0].message.content;
+          console.log("[AI Proxy OpenAI] Roteiro bruto recebido com sucesso.");
+        } catch (extractErr) {
+          console.error("Resposta inválida do OpenAI (sem choices):", openAiResponse);
+          throw new Error("OpenAI retornou um erro ou formato inesperado: " + JSON.stringify(openAiResponse));
+        }
+
+        try {
+          let cleanText = rawContent.trim();
+          if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+          }
+          storyTextData = JSON.parse(cleanText);
         } catch (errParse) {
-          console.error("Erro ao fazer parse da resposta do OpenAI:", errParse);
-          throw new Error("Falha ao processar o JSON retornado pelo OpenAI.");
+          console.error("Erro ao fazer parse da resposta do OpenAI:", errParse, "Conteúdo:", rawContent);
+          throw new Error("Falha ao processar o JSON retornado pelo OpenAI: " + errParse.message + " | Resposta da IA: " + rawContent.substring(0, 100));
         }
       }
 
