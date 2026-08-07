@@ -9,6 +9,7 @@ interface ParentDashboardProps {
   onSelectPlan: (planType: PlanType, billingCycle: 'mensal' | 'anual') => void;
   onCancelSubscription: () => void;
   onDowngradeToFree: () => void;
+  onBuySingleStory?: (childName: string, theme: string, ageGroup: string, childPhoto: string | null) => void;
 }
 
 export const ParentDashboard: React.FC<ParentDashboardProps> = ({
@@ -18,6 +19,7 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
   onSelectPlan,
   onCancelSubscription,
   onDowngradeToFree,
+  onBuySingleStory,
 }) => {
   const triggerDownload = (fileName: string, mimeType: string, content: string) => {
     const blob = new Blob([content], { type: mimeType });
@@ -285,37 +287,93 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
           })()}
 
           {/* Action Buttons */}
-          <div className="flex gap-3 flex-wrap">
+          <div className="flex gap-3 flex-wrap w-full">
             {subscription.planType === 'free' ? (
-              <div className="flex gap-2 flex-wrap">
-                <button 
-                  onClick={() => onSelectPlan('hero', 'mensal')}
-                  className="px-4 py-2.5 bg-gradient-to-r from-amber-450 to-amber-550 text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition-all"
-                >
-                  🚀 Assinar Inicial (R$ 49/mês)
-                </button>
-                <button 
-                  onClick={() => onSelectPlan('legendary', 'mensal')}
-                  className="px-4 py-2.5 bg-gradient-to-r from-[#6A3DF0] to-[#00C8FF] text-white font-extrabold text-xs rounded-xl shadow-md hover:shadow-lg transition-all"
-                >
-                  ⭐ Assinar Criador (R$ 249/mês)
-                </button>
+              <div className="flex flex-col gap-6 w-full mt-4">
+                <span className="text-xs font-black text-slate-500 uppercase tracking-widest block mb-1">Planos de Assinatura</span>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {/* Plano Inicial (Hero) */}
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col justify-between gap-4">
+                    <div>
+                      <h5 className="text-sm font-black text-slate-800">🚀 Plano Inicial (Hero)</h5>
+                      <p className="text-[11px] text-slate-500 mt-1">Perfeito para começar a criar. 1500 Toon Credits inclusos.</p>
+                    </div>
+                    <div className="flex justify-between items-baseline mt-2">
+                      <span className="text-lg font-black text-slate-800">R$ 49<span className="text-[10px] font-bold text-slate-400">/mês</span></span>
+                    </div>
+                    <button 
+                      onClick={() => onSelectPlan('hero', 'mensal')}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                      Assinar Inicial
+                    </button>
+                  </div>
+
+                  {/* Plano Profissional */}
+                  <div className="bg-slate-50 border border-slate-100 rounded-2xl p-5 flex flex-col justify-between gap-4">
+                    <div>
+                      <h5 className="text-sm font-black text-slate-800">⚡ Plano Profissional</h5>
+                      <p className="text-[11px] text-slate-500 mt-1">Mais poder criativo. 5000 Toon Credits inclusos.</p>
+                    </div>
+                    <div className="flex justify-between items-baseline mt-2">
+                      <span className="text-lg font-black text-slate-800">R$ 119<span className="text-[10px] font-bold text-slate-400">/mês</span></span>
+                    </div>
+                    <button 
+                      onClick={() => onSelectPlan('professional', 'mensal')}
+                      className="w-full py-2.5 bg-amber-500 hover:bg-amber-600 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                      Assinar Profissional
+                    </button>
+                  </div>
+
+                  {/* Plano Criador (Legendary) */}
+                  <div className="bg-gradient-to-b from-white to-slate-50/50 border-2 border-amber-500/60 rounded-2xl p-5 flex flex-col justify-between gap-4 relative overflow-hidden shadow-md">
+                    <span className="absolute -right-8 -top-1 bg-gradient-to-r from-amber-500 to-orange-500 text-white text-[8px] font-black uppercase tracking-wider py-1 px-8 rotate-45">Melhor Valor</span>
+                    <div>
+                      <h5 className="text-sm font-black text-slate-800">⭐ Plano Criador (Legendary)</h5>
+                      <p className="text-[11px] text-slate-500 mt-1">Criador mestre de livros. 12000 Toon Credits inclusos.</p>
+                    </div>
+                    <div className="flex justify-between items-baseline mt-2">
+                      <span className="text-lg font-black text-slate-800">R$ 249<span className="text-[10px] font-bold text-slate-400">/mês</span></span>
+                    </div>
+                    <button 
+                      onClick={() => onSelectPlan('legendary', 'mensal')}
+                      className="w-full py-2.5 bg-gradient-to-r from-amber-500 to-orange-500 text-white font-extrabold text-xs rounded-xl transition-all cursor-pointer"
+                    >
+                      Assinar Criador
+                    </button>
+                  </div>
+                </div>
+
+                {/* Créditos Avulsos Section */}
+                <div className="mt-2 p-5 bg-amber-50/40 border border-amber-200/50 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
+                  <div className="text-left">
+                    <h5 className="text-sm font-black text-slate-800">🪙 Quer apenas testar ou criar uma única história?</h5>
+                    <p className="text-[11px] text-slate-500 mt-1">Compre créditos avulsos avulsamente para criar e baixar seu livro ou vídeo sem compromisso de assinatura.</p>
+                  </div>
+                  <button 
+                    onClick={() => onBuySingleStory?.('Amiguinho', 'Aventura', '2-6', null)}
+                    className="whitespace-nowrap px-5 py-3 bg-slate-900 hover:bg-slate-850 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
+                  >
+                    Comprar Crédito Avulso (R$ 19,90)
+                  </button>
+                </div>
               </div>
             ) : (
-              <>
+              <div className="flex gap-2 flex-wrap">
                 <button
                   onClick={onCancelSubscription}
-                  className="px-5 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all"
+                  className="px-5 py-3 bg-red-50 hover:bg-red-100 text-red-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
                   Cancelar Assinatura
                 </button>
                 <button
                   onClick={onDowngradeToFree}
-                  className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all"
+                  className="px-5 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold text-xs rounded-xl transition-all cursor-pointer"
                 >
                   Retornar ao Plano Gratuito
                 </button>
-              </>
+              </div>
             )}
           </div>
         </div>

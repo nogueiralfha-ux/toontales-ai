@@ -728,6 +728,7 @@ export const LocalSecureApp: React.FC = () => {
                 onSelectPlan={handleSelectPlan}
                 onCancelSubscription={handleCancelSubscription}
                 onDowngradeToFree={handleDowngradeToFree}
+                onBuySingleStory={handleBuySingleStory}
               />
             )}
           </>
