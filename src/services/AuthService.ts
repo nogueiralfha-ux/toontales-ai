@@ -70,7 +70,7 @@ export const AuthService = {
       console.error("Falha ao sincronizar com Firestore:", firebaseErr);
       return { 
         success: false, 
-        message: `Erro ao salvar na nuvem (Firebase): ${firebaseErr.message || firebaseErr}. Verifique as regras de segurança do Firestore.` 
+        message: `[V4-LEADS] Erro ao salvar na nuvem (Firebase): ${firebaseErr.message || firebaseErr}.` 
       };
     }
 
