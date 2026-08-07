@@ -11,27 +11,46 @@ export class MockStoryService implements IStoryService {
     if (ageGroup === '2-6') sceneCount = 8;
     else if (ageGroup === '7-12') sceneCount = 12;
     else if (ageGroup === 'adulto') sceneCount = 16;
-    const generatedTitle = title || this.getDefaultTitle(theme);
+    const rawTitle = title || this.getDefaultTitle(theme);
     
     // Extract a custom name from the prompt/title if available
     let customName = '';
     let parentRole = '';
     
-    if (generatedTitle && generatedTitle !== this.getDefaultTitle(theme)) {
-      const cleanPrompt = generatedTitle.replace(/(historia|história|de|do|da|um|uma|sobre|com|o|a|para|infantil|aventura|desenho|vídeo|livro)\s+/gi, '').trim();
+    // Check for bracket tags first
+    const childMatch = rawTitle.match(/\[Nome da Criança\/Herói:\s*([^\]]+)\]/i);
+    if (childMatch && childMatch[1].trim()) {
+      customName = childMatch[1].trim();
+    }
+    
+    const adultMatch = rawTitle.match(/\[Nome do Adulto:\s*([^\]]+)\]/i);
+    if (adultMatch && adultMatch[1].trim()) {
+      parentRole = adultMatch[1].trim();
+    }
+
+    // Fallback name extraction if brackets aren't used
+    if (!customName && rawTitle && rawTitle !== this.getDefaultTitle(theme)) {
+      const cleanPrompt = rawTitle.replace(/\[[^\]]+\]/g, '').replace(/(historia|história|de|do|da|um|uma|sobre|com|o|a|para|infantil|aventura|desenho|vídeo|livro)\s+/gi, '').trim();
       if (cleanPrompt) {
         const firstWord = cleanPrompt.split(/\s+/)[0];
         customName = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
       }
-      
-      // Parent role detection
-      const lowerTitle = generatedTitle.toLowerCase();
+    }
+
+    if (!parentRole && rawTitle) {
+      const lowerTitle = rawTitle.toLowerCase();
       if (lowerTitle.includes('papai') || lowerTitle.includes('pai')) parentRole = 'Papai';
       else if (lowerTitle.includes('mamãe') || lowerTitle.includes('mãe')) parentRole = 'Mamãe';
       else if (lowerTitle.includes('titia') || lowerTitle.includes('tia')) parentRole = 'Titia';
       else if (lowerTitle.includes('titio') || lowerTitle.includes('tio')) parentRole = 'Titio';
       else if (lowerTitle.includes('professora') || lowerTitle.includes('profe')) parentRole = 'Professora';
       else if (lowerTitle.includes('professor')) parentRole = 'Professor';
+    }
+
+    // Clean up title for displaying
+    let generatedTitle = rawTitle.replace(/\[[^\]]+\]/g, '').trim();
+    if (!generatedTitle || generatedTitle === '...') {
+      generatedTitle = this.getDefaultTitle(theme);
     }
 
     const scenes: StoryScene[] = [];

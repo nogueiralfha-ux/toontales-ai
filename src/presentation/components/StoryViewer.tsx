@@ -49,6 +49,8 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
   // Video Autoplay Narration Simulation with Speed Controls
   useEffect(() => {
     let timeout: any;
+    let fallbackTimeout: any;
+    
     if (activeTab === 'video' && isVideoPlaying) {
       const currentScene = story.scenes[currentVideoScene];
       
@@ -56,12 +58,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
 
       const utterance = new SpeechSynthesisUtterance(currentScene.text);
       utterance.lang = 'pt-BR';
-      
-      // Speed mappings
       utterance.rate = 0.85 * videoSpeed;
       utterance.pitch = 1.05; // Slightly child-friendly high pitch
 
-      utterance.onend = () => {
+      const advanceScene = () => {
         timeout = setTimeout(() => {
           if (currentVideoScene < story.scenes.length - 1) {
             setCurrentVideoScene(prev => prev + 1);
@@ -71,7 +71,27 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
           }
         }, 1500 / videoSpeed);
       };
+
+      utterance.onend = () => {
+        clearTimeout(fallbackTimeout);
+        advanceScene();
+      };
+      
+      utterance.onerror = () => {
+        clearTimeout(fallbackTimeout);
+        advanceScene();
+      };
+
       window.speechSynthesis?.speak(utterance);
+
+      // Fallback timer in case speechSynthesis gets stuck or is blocked by browser policies
+      const wordsCount = currentScene.text.split(/\s+/).length;
+      const estimatedMs = Math.max(3000, (wordsCount * 450 + 2500) / videoSpeed);
+      fallbackTimeout = setTimeout(() => {
+        console.warn("[StoryViewer] SpeechSynthesis onend did not fire. Advancing scene via fallback timer.");
+        advanceScene();
+      }, estimatedMs);
+
     } else {
       window.speechSynthesis?.cancel();
     }
@@ -79,6 +99,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
     return () => {
       window.speechSynthesis?.cancel();
       clearTimeout(timeout);
+      clearTimeout(fallbackTimeout);
     };
   }, [activeTab, isVideoPlaying, currentVideoScene, story.scenes, videoSpeed]);
 
