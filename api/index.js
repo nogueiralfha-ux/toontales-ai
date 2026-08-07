@@ -245,10 +245,10 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               }
             } catch (openaiErr) {
               console.error("OpenAI fallback também falhou:", openaiErr);
-              throw new Error("Ambos os serviços de IA (Gemini e OpenAI) falharam ou estão sem saldo.");
+              throw new Error(`Ambos os serviços de IA (Gemini e OpenAI) falharam. Detalhe Gemini: ${err.message || JSON.stringify(err)} | Detalhe OpenAI: ${openaiErr.message || JSON.stringify(openaiErr)}`);
             }
           } else {
-            throw err;
+            throw new Error(`Google Gemini falhou: ${err.message || JSON.stringify(err)}. OpenAI não está configurada.`);
           }
         }
       } else {
@@ -271,10 +271,10 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               usedFallback = true;
             } catch (geminiErr) {
               console.error("Gemini fallback também falhou:", geminiErr);
-              throw new Error("Ambos os serviços de IA (OpenAI e Gemini) falharam ou estão sem saldo.");
+              throw new Error(`Ambos os serviços de IA (OpenAI e Gemini) falharam. Detalhe OpenAI: ${err.message || JSON.stringify(err)} | Detalhe Gemini: ${geminiErr.message || JSON.stringify(geminiErr)}`);
             }
           } else {
-            throw err;
+            throw new Error(`OpenAI falhou: ${err.message || JSON.stringify(err)}. Google Gemini não está configurado.`);
           }
         }
       }
