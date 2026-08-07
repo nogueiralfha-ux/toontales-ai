@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { PlanType } from '../../domain/Subscription';
 import { TaceEngine, TaceEngineConfig, TaceQuality, TaceResolution, TaceResourceType } from '../../services/TaceEngine';
+import { getUsersFromFirestore } from '../../services/firebaseConfig';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -14,6 +15,7 @@ interface SimulatedUser {
   billingCycle: 'mensal' | 'anual' | 'N/A';
   dateJoined: string;
   asaasCustomerId: string;
+  whatsapp?: string;
 }
 
 interface AIProvider {
@@ -41,6 +43,35 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: '4', name: 'Pedro Santos', email: 'pedrinho99@gmail.com', plan: 'free', billingCycle: 'N/A', dateJoined: '2026-08-01', asaasCustomerId: 'cus_772839182' },
     { id: '5', name: 'Fábio Ramos', email: 'fabio.ramos@gmail.com', plan: 'hero', billingCycle: 'anual', dateJoined: '2026-05-20', asaasCustomerId: 'cus_661928374' }
   ]);
+
+  // Load registered users from Firestore on mount
+  useEffect(() => {
+    const loadRealUsers = async () => {
+      try {
+        const realList = await getUsersFromFirestore();
+        if (realList && realList.length > 0) {
+          const formatted: SimulatedUser[] = realList.map((ru, idx) => ({
+            id: ru.id || `db-${idx}`,
+            name: ru.name || 'Sem Nome',
+            email: ru.email,
+            plan: 'free',
+            billingCycle: 'N/A',
+            dateJoined: ru.createdAt ? ru.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
+            asaasCustomerId: 'Firestore Cloud',
+            whatsapp: ru.whatsapp
+          }));
+
+          setUsers(prev => {
+            const filteredPrev = prev.filter(pu => !formatted.some(fu => fu.email === pu.email));
+            return [...formatted, ...filteredPrev];
+          });
+        }
+      } catch (err) {
+        console.error("Erro ao sincronizar usuários do Firestore:", err);
+      }
+    };
+    loadRealUsers();
+  }, []);
 
   // AI Providers state (Marketplace)
   const [providers, setProviders] = useState<AIProvider[]>([
@@ -195,6 +226,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
                       <td className="py-4">
                         <span className="block font-bold text-slate-800">{user.name}</span>
                         <span className="block text-[10px] text-slate-400">{user.email}</span>
+                        {user.whatsapp && (
+                          <span className="inline-block mt-1 text-[9px] font-black text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-100/60">
+                            🟢 WhatsApp: {user.whatsapp}
+                          </span>
+                        )}
                       </td>
                       <td className="py-4">
                         <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${

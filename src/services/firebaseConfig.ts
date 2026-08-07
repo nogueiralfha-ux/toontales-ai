@@ -45,3 +45,36 @@ export const getLeadsFromFirestore = async () => {
     return [];
   }
 };
+
+// Gravar e listar Usuários registrados
+export const saveUserToFirestore = async (email: string, name: string, whatsapp: string) => {
+  try {
+    const docRef = await addDoc(collection(db, "users"), {
+      email,
+      name,
+      whatsapp,
+      createdAt: new Date().toISOString()
+    });
+    console.log("Usuário gravado no Firestore com ID: ", docRef.id);
+    return docRef.id;
+  } catch (e) {
+    console.error("Erro ao gravar usuário no Firebase Firestore: ", e);
+    throw e;
+  }
+};
+
+export const getUsersFromFirestore = async () => {
+  try {
+    const q = query(collection(db, "users"));
+    const querySnapshot = await getDocs(q);
+    const usersList: any[] = [];
+    querySnapshot.forEach((doc) => {
+      usersList.push({ id: doc.id, ...doc.data() });
+    });
+    return usersList;
+  } catch (e) {
+    console.error("Erro ao listar usuários do Firebase Firestore: ", e);
+    return [];
+  }
+};
+

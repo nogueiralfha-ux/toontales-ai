@@ -1,3 +1,5 @@
+import { saveUserToFirestore } from './firebaseConfig';
+
 export interface UserSession {
   email: string;
   role: 'admin' | 'user';
@@ -9,6 +11,7 @@ export interface RegisteredUser {
   email: string;
   passwordHash: string;
   name: string;
+  whatsapp: string;
   createdAt: string;
 }
 
@@ -48,9 +51,10 @@ export const AuthService = {
     }
   },
 
-  registerUser(email: string, password: string, name: string): { success: boolean; message: string } {
+  async registerUser(email: string, password: string, name: string, whatsapp: string): Promise<{ success: boolean; message: string }> {
     const trimmedEmail = email.trim().toLowerCase();
-    if (!trimmedEmail || !password || !name) {
+    const trimmedWhatsapp = whatsapp.trim();
+    if (!trimmedEmail || !password || !name || !trimmedWhatsapp) {
       return { success: false, message: 'Todos os campos são obrigatórios.' };
     }
 
@@ -59,10 +63,18 @@ export const AuthService = {
       return { success: false, message: 'Este endereço de e-mail já está cadastrado.' };
     }
 
+    // Gravar no Firestore
+    try {
+      await saveUserToFirestore(trimmedEmail, name.trim(), trimmedWhatsapp);
+    } catch (firebaseErr) {
+      console.warn("Falha ao sincronizar com Firestore, salvando apenas localmente:", firebaseErr);
+    }
+
     const newUser: RegisteredUser = {
       email: trimmedEmail,
       passwordHash: this.hashPassword(password),
       name: name.trim(),
+      whatsapp: trimmedWhatsapp,
       createdAt: new Date().toISOString()
     };
 

@@ -10,53 +10,66 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onBack
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
+  const [whatsapp, setWhatsapp] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg(null);
     setSuccessMsg(null);
     setIsLoading(true);
 
-    // Simulate small latency for realistic loading experience
-    setTimeout(() => {
+    const trimmedEmail = email.trim().toLowerCase();
+
+    if (isRegisterMode) {
+      // Fluxo de Cadastro
+      if (!name.trim()) {
+        setErrorMsg('Por favor, insira o seu nome.');
+        setIsLoading(false);
+        return;
+      }
+      if (!trimmedEmail.includes('@') || trimmedEmail.length < 5) {
+        setErrorMsg('Por favor, insira um e-mail válido.');
+        setIsLoading(false);
+        return;
+      }
+      if (!whatsapp.trim()) {
+        setErrorMsg('Por favor, insira um WhatsApp válido.');
+        setIsLoading(false);
+        return;
+      }
+      if (password.length < 4) {
+        setErrorMsg('A senha deve ter no mínimo 4 caracteres.');
+        setIsLoading(false);
+        return;
+      }
+      if (password !== confirmPassword) {
+        setErrorMsg('As senhas não coincidem.');
+        setIsLoading(false);
+        return;
+      }
+
+      const regResult = await AuthService.registerUser(trimmedEmail, password, name, whatsapp);
       setIsLoading(false);
-      const trimmedEmail = email.trim().toLowerCase();
 
-      if (isRegisterMode) {
-        // Fluxo de Cadastro
-        if (!name.trim()) {
-          setErrorMsg('Por favor, insira o seu nome.');
-          return;
-        }
-        if (!trimmedEmail.includes('@') || trimmedEmail.length < 5) {
-          setErrorMsg('Por favor, insira um e-mail válido.');
-          return;
-        }
-        if (password.length < 4) {
-          setErrorMsg('A senha deve ter no mínimo 4 caracteres.');
-          return;
-        }
-        if (password !== confirmPassword) {
-          setErrorMsg('As senhas não coincidem.');
-          return;
-        }
-
-        const regResult = AuthService.registerUser(trimmedEmail, password, name);
-        if (regResult.success) {
-          setSuccessMsg('Conta criada com sucesso! Faça login abaixo.');
-          setIsRegisterMode(false);
-          setPassword('');
-          setConfirmPassword('');
-        } else {
-          setErrorMsg(regResult.message);
-        }
+      if (regResult.success) {
+        setSuccessMsg('Conta criada com sucesso! Faça login abaixo.');
+        setIsRegisterMode(false);
+        setPassword('');
+        setConfirmPassword('');
+        setWhatsapp('');
       } else {
-        // Fluxo de Login
+        setErrorMsg(regResult.message);
+      }
+    } else {
+      // Fluxo de Login
+      // Simulate small latency for realistic loading experience
+      setTimeout(() => {
+        setIsLoading(false);
         // Credenciais do Administrador
         if (trimmedEmail === 'nogueiralfha@gmail.com') {
           if (password === 'missionario405') {
@@ -82,8 +95,8 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onBack
             setErrorMsg('Este e-mail não está cadastrado. Clique em "Cadastrar-se" para criar uma conta.');
           }
         }
-      }
-    }, 1000);
+      }, 1000);
+    }
   };
 
   return (
@@ -162,6 +175,22 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onLoginSuccess, onBack
                 className="w-full px-4 py-3 bg-slate-50 border border-slate-200/60 focus:border-amber-500 rounded-xl text-sm focus:outline-none focus:bg-white transition-all text-slate-800"
               />
             </div>
+
+            {/* WhatsApp Field (Register mode only) */}
+            {isRegisterMode && (
+              <div>
+                <label className="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Número de WhatsApp</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="(00) 00000-0000"
+                  value={whatsapp}
+                  onChange={(e) => setWhatsapp(e.target.value)}
+                  disabled={isLoading}
+                  className="w-full px-4 py-3 bg-slate-50 border border-slate-200/60 focus:border-amber-500 rounded-xl text-sm focus:outline-none focus:bg-white transition-all text-slate-800"
+                />
+              </div>
+            )}
 
             {/* Password Field */}
             <div>
