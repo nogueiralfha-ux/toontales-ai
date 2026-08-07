@@ -505,7 +505,6 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             console.error("Contingência do Google Imagen 3 também falhou:", imagenErr);
           }
         }
-      }
 
         // Step B: Generate Audio and convert to base64 Data URI (serverless friendly)
         try {
