@@ -231,7 +231,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
         try {
           const geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
-          rawContent = geminiResponse.candidates[0].content.parts[0].text;
+          rawContent = geminiResponse;
         } catch (err) {
           console.warn("Google Gemini falhou. Tentando OpenAI como fallback...", err);
           if (openAiKey && !openAiKey.includes('sua_chave')) {
@@ -267,7 +267,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           if (geminiKey && !geminiKey.includes('sua_chave')) {
             try {
               const geminiResponse = await generateTextWithGemini('gemini-1.5-flash', geminiKey, promptSystem, userInstruction);
-              rawContent = geminiResponse.candidates[0].content.parts[0].text;
+              rawContent = geminiResponse;
               usedFallback = true;
             } catch (geminiErr) {
               console.error("Gemini fallback também falhou:", geminiErr);
