@@ -231,7 +231,13 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
         try {
           const geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
-          rawContent = geminiResponse;
+          if (geminiResponse.candidates && geminiResponse.candidates[0] && geminiResponse.candidates[0].content && geminiResponse.candidates[0].content.parts[0]) {
+            rawContent = geminiResponse.candidates[0].content.parts[0].text;
+          } else if (geminiResponse.error) {
+            throw new Error(geminiResponse.error.message || "Erro da API do Gemini");
+          } else {
+            throw new Error("Gemini não retornou candidates válidos: " + JSON.stringify(geminiResponse));
+          }
         } catch (err) {
           console.warn("Google Gemini falhou. Tentando OpenAI como fallback...", err);
           if (openAiKey && !openAiKey.includes('sua_chave')) {
@@ -267,8 +273,14 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           if (geminiKey && !geminiKey.includes('sua_chave')) {
             try {
               const geminiResponse = await generateTextWithGemini('gemini-1.5-flash', geminiKey, promptSystem, userInstruction);
-              rawContent = geminiResponse;
-              usedFallback = true;
+              if (geminiResponse.candidates && geminiResponse.candidates[0] && geminiResponse.candidates[0].content && geminiResponse.candidates[0].content.parts[0]) {
+                rawContent = geminiResponse.candidates[0].content.parts[0].text;
+                usedFallback = true;
+              } else if (geminiResponse.error) {
+                throw new Error(geminiResponse.error.message || "Erro da API do Gemini");
+              } else {
+                throw new Error("Gemini não retornou candidates válidos: " + JSON.stringify(geminiResponse));
+              }
             } catch (geminiErr) {
               console.error("Gemini fallback também falhou:", geminiErr);
               throw new Error(`Ambos os serviços de IA (OpenAI e Gemini) falharam. Detalhe OpenAI: ${err.message || JSON.stringify(err)} | Detalhe Gemini: ${geminiErr.message || JSON.stringify(geminiErr)}`);
