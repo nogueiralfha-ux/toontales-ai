@@ -42,6 +42,69 @@ async function asaasRequest(method, path, body = null) {
   });
 }
 
+// Helper para geração com Gemini
+async function generateTextWithGemini(modelName, apiKey, promptSystem, userInstruction) {
+  return new Promise((resolve, reject) => {
+    const reqPost = https.request({
+      method: 'POST',
+      hostname: 'generativelanguage.googleapis.com',
+      path: `/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      headers: { 'Content-Type': 'application/json' }
+    }, (resPost) => {
+      let resData = '';
+      resPost.on('data', chunk => resData += chunk);
+      resPost.on('end', () => {
+        try {
+          resolve(JSON.parse(resData));
+        } catch (e) {
+          reject(new Error("Erro de parse da resposta do Gemini"));
+        }
+      });
+    });
+    reqPost.on('error', reject);
+    reqPost.write(JSON.stringify({
+      contents: [{ parts: [{ text: `${promptSystem}\n\nInstrução:\n${userInstruction}` }] }],
+      generationConfig: { responseMimeType: "application/json" }
+    }));
+    reqPost.end();
+  });
+}
+
+// Helper para geração com OpenAI
+async function generateTextWithOpenAI(modelName, apiKey, promptSystem, userInstruction) {
+  return new Promise((resolve, reject) => {
+    const reqPost = https.request({
+      method: 'POST',
+      hostname: 'api.openai.com',
+      path: '/v1/chat/completions',
+      headers: {
+        'Authorization': `Bearer ${apiKey}`,
+        'Content-Type': 'application/json'
+      }
+    }, (resPost) => {
+      let resData = '';
+      resPost.on('data', chunk => resData += chunk);
+      resPost.on('end', () => {
+        try {
+          resolve(JSON.parse(resData));
+        } catch (e) {
+          reject(new Error("Erro de parse da resposta da OpenAI"));
+        }
+      });
+    });
+    reqPost.on('error', reject);
+    reqPost.write(JSON.stringify({
+      model: modelName,
+      response_format: { type: "json_object" },
+      messages: [
+        { role: 'system', content: promptSystem },
+        { role: 'user', content: userInstruction }
+      ]
+    }));
+    reqPost.end();
+  });
+}
+
 export default async function handler(req, res) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
@@ -157,101 +220,75 @@ Gere exatamente ${ageGroup === '2-6' ? 8 : ageGroup === '7-12' ? 12 : 16} cenas 
 Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado a "mágica" ou "magia".`;
 
       let storyTextData;
+      let rawContent = '';
+      let usedFallback = false;
 
       // Dynamic AI Routing based on TACE selection
       const useGemini = modelId ? modelId.startsWith('gemini') : (geminiKey && !geminiKey.includes('sua_chave'));
       
       if (useGemini) {
-        // Map TACE modelId to official Gemini API model identifier
         const geminiModel = modelId === 'gemini-pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
         console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
-        const geminiResponse = await new Promise((resolve, reject) => {
-          const reqPost = https.request({
-            method: 'POST',
-            hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`,
-            headers: { 'Content-Type': 'application/json' }
-          }, (resPost) => {
-            let resData = '';
-            resPost.on('data', chunk => resData += chunk);
-            resPost.on('end', () => resolve(JSON.parse(resData)));
-          });
-          reqPost.on('error', reject);
-          reqPost.write(JSON.stringify({
-            contents: [{ parts: [{ text: `${promptSystem}\n\nInstrução:\n${userInstruction}` }] }],
-            generationConfig: { responseMimeType: "application/json" }
-          }));
-          reqPost.end();
-        });
-
-        let rawText = '';
         try {
-          rawText = geminiResponse.candidates[0].content.parts[0].text;
-          console.log("[AI Proxy Gemini] Roteiro bruto recebido com sucesso.");
-        } catch (extractErr) {
-          console.error("[AI Proxy Gemini] Formato de resposta do Gemini inesperado:", geminiResponse);
-          throw new Error("Resposta inválida do Gemini: " + JSON.stringify(geminiResponse));
-        }
-
-        try {
-          let cleanText = rawText.trim();
-          if (cleanText.startsWith('```')) {
-            cleanText = cleanText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+          const geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
+          rawContent = geminiResponse.candidates[0].content.parts[0].text;
+        } catch (err) {
+          console.warn("Google Gemini falhou. Tentando OpenAI como fallback...", err);
+          if (openAiKey && !openAiKey.includes('sua_chave')) {
+            try {
+              const openAiResponse = await generateTextWithOpenAI('gpt-4o-mini', openAiKey, promptSystem, userInstruction);
+              if (openAiResponse.choices && openAiResponse.choices[0]) {
+                rawContent = openAiResponse.choices[0].message.content;
+                usedFallback = true;
+              } else {
+                throw new Error("Resposta da OpenAI vazia ou inválida.");
+              }
+            } catch (openaiErr) {
+              console.error("OpenAI fallback também falhou:", openaiErr);
+              throw new Error("Ambos os serviços de IA (Gemini e OpenAI) falharam ou estão sem saldo.");
+            }
+          } else {
+            throw err;
           }
-          storyTextData = JSON.parse(cleanText);
-        } catch (errParse) {
-          console.error("Erro ao fazer parse da resposta do Gemini:", errParse, "Texto:", rawText);
-          throw new Error("Falha ao processar o formato JSON retornado pela IA.");
         }
       } else {
-        // Map TACE modelId to official OpenAI API model identifier
         const openAiModel = modelId === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini';
         console.log(`[AI Proxy TACE] Gerando texto com OpenAI GPT (${openAiModel})...`);
-        const openAiResponse = await new Promise((resolve, reject) => {
-          const reqPost = https.request({
-            method: 'POST',
-            hostname: 'api.openai.com',
-            path: '/v1/chat/completions',
-            headers: {
-              'Authorization': `Bearer ${openAiKey}`,
-              'Content-Type': 'application/json'
-            }
-          }, (resPost) => {
-            let resData = '';
-            resPost.on('data', chunk => resData += chunk);
-            resPost.on('end', () => resolve(JSON.parse(resData)));
-          });
-          reqPost.on('error', reject);
-          reqPost.write(JSON.stringify({
-            model: openAiModel,
-            response_format: { type: "json_object" },
-            messages: [
-              { role: 'system', content: promptSystem },
-              { role: 'user', content: userInstruction }
-            ]
-          }));
-          reqPost.end();
-        });
-
-        let rawContent = '';
         try {
-          rawContent = openAiResponse.choices[0].message.content;
-          console.log("[AI Proxy OpenAI] Roteiro bruto recebido com sucesso.");
-        } catch (extractErr) {
-          console.error("Resposta inválida do OpenAI (sem choices):", openAiResponse);
-          throw new Error("OpenAI retornou um erro ou formato inesperado: " + JSON.stringify(openAiResponse));
-        }
-
-        try {
-          let cleanText = rawContent.trim();
-          if (cleanText.startsWith('```')) {
-            cleanText = cleanText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+          const openAiResponse = await generateTextWithOpenAI(openAiModel, openAiKey, promptSystem, userInstruction);
+          
+          if (openAiResponse.error) {
+            throw new Error(openAiResponse.error.message || "Erro na cota da OpenAI");
           }
-          storyTextData = JSON.parse(cleanText);
-        } catch (errParse) {
-          console.error("Erro ao fazer parse da resposta do OpenAI:", errParse, "Conteúdo:", rawContent);
-          throw new Error("Falha ao processar o JSON retornado pelo OpenAI: " + errParse.message + " | Resposta da IA: " + rawContent.substring(0, 100));
+          
+          rawContent = openAiResponse.choices[0].message.content;
+        } catch (err) {
+          console.warn("OpenAI falhou (provavelmente sem créditos). Tentando Google Gemini 1.5 Flash como fallback...", err);
+          if (geminiKey && !geminiKey.includes('sua_chave')) {
+            try {
+              const geminiResponse = await generateTextWithGemini('gemini-1.5-flash', geminiKey, promptSystem, userInstruction);
+              rawContent = geminiResponse.candidates[0].content.parts[0].text;
+              usedFallback = true;
+            } catch (geminiErr) {
+              console.error("Gemini fallback também falhou:", geminiErr);
+              throw new Error("Ambos os serviços de IA (OpenAI e Gemini) falharam ou estão sem saldo.");
+            }
+          } else {
+            throw err;
+          }
         }
+      }
+
+      // Parse JSON com sanitização de crases
+      try {
+        let cleanText = rawContent.trim();
+        if (cleanText.startsWith('```')) {
+          cleanText = cleanText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+        }
+        storyTextData = JSON.parse(cleanText);
+      } catch (errParse) {
+        console.error("Erro ao fazer parse da resposta da IA:", errParse, "Conteúdo:", rawContent);
+        throw new Error("Falha ao processar o formato JSON da história: " + errParse.message + " | Resposta bruta: " + rawContent.substring(0, 100));
       }
 
       // Generate illustrations and voice in parallel
