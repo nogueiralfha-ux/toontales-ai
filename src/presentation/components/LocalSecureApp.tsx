@@ -21,6 +21,177 @@ import { TaceEngine, TaceQuality } from '../../services/TaceEngine';
 
 const storyService = new MockStoryService();
 
+const DEMO_STORIES: Story[] = [
+  {
+    id: "demo-infantil",
+    title: "Tito e o Segredo da Floresta da Gratidão",
+    theme: "Educativo",
+    ageGroup: "2-6",
+    createdAt: new Date(),
+    moralLesson: "Ser grato pelas pequenas coisas nos traz verdadeira alegria e grandes amigos.",
+    bibleReference: "Salmos 107:1 - Dêem graças ao Senhor, porque ele é bom.",
+    audioUrl: "",
+    scenes: [
+      {
+        pageNumber: 1,
+        text: "Tito era um elefantinho azul muito simpático que vivia na Floresta Feliz. Ele adorava caminhar e observar as cores da natureza.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 2,
+        text: "Um dia, Tito encontrou Pip, um passarinho amarelo que estava triste por ter perdido seu ninho favorito na grande árvore.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1518887570146-0612132dd618?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1518887570146-0612132dd618?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 3,
+        text: "Tito sorriu e disse: 'Não se preocupe, Pip! Vamos dar graças pelo dia de hoje e trabalhar juntos para construir algo ainda mais bonito.'",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 4,
+        text: "Eles juntaram gravetos macios e folhas coloridas. A cada raminho que achavam, agradeciam pelo vento morno e pelo sol brilhante.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 5,
+        text: "Ao entardecer, o novo ninho estava pronto! Era forte, seguro e brilhava sob um lindo arco-íris que surgiu no céu.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 6,
+        text: "Pip cantou uma melodia alegre para Tito. Tito sentiu seu coração quentinho e percebeu que a amizade é o melhor presente de todos.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1516624683217-bf02fc6b6b7c?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1516624683217-bf02fc6b6b7c?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 7,
+        text: "Os outros animais da floresta vieram ver e aprenderam que agradecer transforma qualquer dia difícil em uma linda aventura.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 8,
+        text: "Tito deitou sob as estrelas piscantes, agradecendo por sua casinha, por Pip e por cada história de amor que viveria no amanhã.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=600",
+        audioUrl: ""
+      }
+    ]
+  },
+  {
+    id: "demo-adulto",
+    title: "O Farol da Persistência: A Jornada de Sofia",
+    theme: "Educativo",
+    ageGroup: "adulto",
+    createdAt: new Date(),
+    moralLesson: "Os ventos fortes da vida não servem para nos derrubar, mas para nos ensinar a ajustar as velas.",
+    bibleReference: "Filipenses 4:13 - Tudo posso naquele que me fortalece.",
+    audioUrl: "",
+    scenes: [
+      {
+        pageNumber: 1,
+        text: "Sofia cresceu na pequena Vila dos Ventos, um lugar cercado por montanhas rochosas e um mar misterioso que desafiava a todos.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 2,
+        text: "Seu grande sonho era guiar os barcos de pesca através da neblina espessa instalada nas noites frias de inverno.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 3,
+        text: "Os mais experientes diziam que era impossível domar a neblina sem um farol moderno, que a vila não tinha condições de comprar.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 4,
+        text: "Sem se abalar, Sofia decidiu construir um refletor artesanal utilizando vidros coloridos descartados e óleo de sementes locais.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 5,
+        text: "Trabalhou incansavelmente durante semanas na torre abandonada, limpando as engrenagens de ferro sob chuva e vento forte.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 6,
+        text: "Na primeira noite de tempestade do ano, as luzes da torre piscaram e finalmente acenderam, emitindo um brilho dourado e acolhedor.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 7,
+        text: "Os pescadores que estavam perdidos no mar avistaram o feixe dourado de Sofia e conseguiram retornar seguros para o porto.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1472214222555-d404758b1c42?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1472214222555-d404758b1c42?q=80&w=600",
+        audioUrl: ""
+      },
+      {
+        pageNumber: 8,
+        text: "Sofia provou que com determinação, fé e criatividade, é possível iluminar os caminhos mais difíceis e proteger quem amamos.",
+        illustrationSvg: "",
+        coloringSvg: "",
+        illustrationUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600",
+        coloringUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600",
+        audioUrl: ""
+      }
+    ]
+  }
+];
+
 type ViewType = 'landing' | 'login' | 'studio' | 'admin';
 
 export const LocalSecureApp: React.FC = () => {
@@ -120,14 +291,16 @@ export const LocalSecureApp: React.FC = () => {
     // Load Stories
     try {
       const saved = localStorage.getItem(storiesKey);
-      if (saved) {
+      if (saved && JSON.parse(saved).length > 0) {
         const parsed = JSON.parse(saved).map((story: any) => ({
           ...story,
           createdAt: new Date(story.createdAt)
         }));
         setStories(parsed);
       } else {
-        setStories([]);
+        // Se a biblioteca estiver vazia, iniciamos com as duas histórias de exemplo premium
+        localStorage.setItem(storiesKey, JSON.stringify(DEMO_STORIES));
+        setStories(DEMO_STORIES);
       }
     } catch (e) {
       console.error("Erro ao carregar histórias locais:", e);
