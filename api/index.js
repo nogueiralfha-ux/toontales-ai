@@ -103,6 +103,52 @@ async function generateTextWithOpenAI(modelName, apiKey, promptSystem, userInstr
     }));
     reqPost.end();
   });
+// Helper para upload de imagens base64 para a CDN do Fal.ai
+async function uploadBase64ToFal(base64Data, falKey) {
+  const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
+  const fileBuffer = Buffer.from(cleanBase64, 'base64');
+  
+  const boundary = '----WebKitFormBoundary' + Math.random().toString(36).substring(2);
+  const header = `--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="image.jpg"\r\nContent-Type: image/jpeg\r\n\r\n`;
+  const footer = `\r\n--${boundary}--\r\n`;
+  
+  const requestBody = Buffer.concat([
+    Buffer.from(header, 'utf-8'),
+    fileBuffer,
+    Buffer.from(footer, 'utf-8')
+  ]);
+
+  return new Promise((resolve, reject) => {
+    const req = https.request({
+      method: 'POST',
+      hostname: 'files.fal.run',
+      path: '/upload',
+      headers: {
+        'Authorization': `Key ${falKey}`,
+        'Content-Type': `multipart/form-data; boundary=${boundary}`,
+        'Content-Length': requestBody.length
+      }
+    }, (res) => {
+      let resData = '';
+      res.on('data', chunk => resData += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(resData);
+          if (parsed.url) {
+            resolve(parsed.url);
+          } else {
+            reject(new Error("Fal upload failed: " + resData));
+          }
+        } catch (e) {
+          reject(e);
+        }
+      });
+    });
+
+    req.on('error', reject);
+    req.write(requestBody);
+    req.end();
+  });
 }
 
 export default async function handler(req, res) {
@@ -302,6 +348,22 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         console.error("Erro ao fazer parse da resposta da IA:", errParse, "Conteúdo:", rawContent);
         throw new Error("Falha ao processar o formato JSON da história: " + errParse.message + " | Resposta bruta: " + rawContent.substring(0, 100));
       }
+      // Upload preliminar de fotos locais de rosto para a CDN do Fal.ai
+      let publicPhotoUrl = null;
+      if ((childPhoto || parentPhoto) && falKey && !falKey.includes('sua_chave')) {
+        try {
+          console.log("[AI Proxy] Detectada foto local para consistência. Fazendo upload para CDN do Fal.ai...");
+          const photoToUpload = childPhoto || parentPhoto;
+          if (photoToUpload.startsWith('data:')) {
+            publicPhotoUrl = await uploadBase64ToFal(photoToUpload, falKey);
+            console.log("[AI Proxy] Upload de foto concluído com sucesso. URL pública:", publicPhotoUrl);
+          } else {
+            publicPhotoUrl = photoToUpload;
+          }
+        } catch (uploadErr) {
+          console.error("[AI Proxy] Falha no upload preliminar da foto de rosto:", uploadErr);
+        }
+      }
 
       // Generate illustrations and voice in parallel
       const scenesPromises = storyTextData.scenes.map(async (scene) => {
@@ -354,14 +416,14 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             } else if (imagenResponse.error) {
               throw new Error(imagenResponse.error.message || "Erro desconhecido do Google Imagen 3");
             } else {
-              throw new Error("Imagen 3 não retornou dados de imagem em predictions.");
+              throw new Error("Imagen 3 não retornou dados de imagem in predictions.");
             }
           } else if (falKey && !falKey.includes('sua_chave')) {
             console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Fal.ai...`);
-            const isConsistent = childPhoto || parentPhoto;
+            const isConsistent = !!publicPhotoUrl;
             const bodyObj = isConsistent ? {
               prompt: `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`,
-              reference_image_url: childPhoto || parentPhoto,
+              reference_image_url: publicPhotoUrl,
               image_size: "landscape_16_9"
             } : {
               prompt: `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`,
