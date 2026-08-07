@@ -54,7 +54,7 @@ const DEFAULT_CONFIG: TaceEngineConfig = {
   models: [
     // Text IAs
     { modelId: 'gemini-flash', name: 'Gemini 1.5 Flash', provider: 'google', baseCostTc: 5, isActive: true, priority: 1 },
-    { modelId: 'gemini-pro', name: 'Gemini 1.5 Pro', provider: 'google', baseCostTc: 15, isActive: true, priority: 2 },
+    { modelId: 'gemini-pro', name: 'Gemini 1.5 Pro', provider: 'google', baseCostTc: 25, isActive: true, priority: 2 },
     { modelId: 'gpt-4o-mini', name: 'GPT-4o Mini', provider: 'openai', baseCostTc: 10, isActive: true, priority: 3 },
     { modelId: 'gpt-4o', name: 'GPT-4o', provider: 'openai', baseCostTc: 40, isActive: true, priority: 4 },
     
