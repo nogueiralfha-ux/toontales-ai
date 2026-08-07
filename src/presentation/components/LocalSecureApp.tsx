@@ -234,7 +234,10 @@ export const LocalSecureApp: React.FC = () => {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ theme, ageGroup, prompt, childPhoto, parentPhoto, modelId: bestModel.modelId })
       });
-      if (!response.ok) throw new Error("Erro na chamada de API do proxy");
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(errText || "Erro desconhecido no servidor.");
+      }
       const data = await response.json();
       
       if (data.status === 'fallback_mock') {
@@ -246,8 +249,9 @@ export const LocalSecureApp: React.FC = () => {
           createdAt: new Date(data.createdAt)
         };
       }
-    } catch (e) {
+    } catch (e: any) {
       console.warn("Falha ao gerar história via API real. Utilizando gerador local como fallback:", e);
+      alert(`⚠️ Falha na geração com IA Real:\n${e.message || e}\n\nO sistema usará o gerador simulado de rascunhos como fallback temporário.`);
       const title = prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt;
       newStory = await storyService.generateStory(theme, ageGroup, title);
     }

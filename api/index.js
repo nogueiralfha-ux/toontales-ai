@@ -184,8 +184,25 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           reqPost.end();
         });
 
-        const rawText = geminiResponse.candidates[0].content.parts[0].text;
-        storyTextData = JSON.parse(rawText);
+        let rawText = '';
+        try {
+          rawText = geminiResponse.candidates[0].content.parts[0].text;
+          console.log("[AI Proxy Gemini] Roteiro bruto recebido com sucesso.");
+        } catch (extractErr) {
+          console.error("[AI Proxy Gemini] Formato de resposta do Gemini inesperado:", geminiResponse);
+          throw new Error("Resposta inválida do Gemini: " + JSON.stringify(geminiResponse));
+        }
+
+        try {
+          let cleanText = rawText.trim();
+          if (cleanText.startsWith('```')) {
+            cleanText = cleanText.replace(/^```json/, '').replace(/^```/, '').replace(/```$/, '').trim();
+          }
+          storyTextData = JSON.parse(cleanText);
+        } catch (errParse) {
+          console.error("Erro ao fazer parse da resposta do Gemini:", errParse, "Texto:", rawText);
+          throw new Error("Falha ao processar o formato JSON retornado pela IA.");
+        }
       } else {
         // Map TACE modelId to official OpenAI API model identifier
         const openAiModel = modelId === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini';
@@ -216,7 +233,12 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           reqPost.end();
         });
 
-        storyTextData = JSON.parse(openAiResponse.choices[0].message.content);
+        try {
+          storyTextData = JSON.parse(openAiResponse.choices[0].message.content);
+        } catch (errParse) {
+          console.error("Erro ao fazer parse da resposta do OpenAI:", errParse);
+          throw new Error("Falha ao processar o JSON retornado pelo OpenAI.");
+        }
       }
 
       // Generate illustrations and voice in parallel
