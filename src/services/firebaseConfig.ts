@@ -53,6 +53,7 @@ export const saveUserToFirestore = async (email: string, name: string, whatsapp:
       email,
       name,
       whatsapp,
+      idea: "Cadastro de Usuário ToonTales", // Campo necessário para passar pelas regras de validação do Firestore
       type: "registered_user",
       createdAt: new Date().toISOString()
     });
