@@ -132,9 +132,23 @@ export class TaceEngine {
     const cost = this.calculateCost(resource, quality, resolution, modelId, quantity);
     
     // Get subscription
-    const subSaved = localStorage.getItem('toontales_subscription');
+    let subSaved = localStorage.getItem('toontales_subscription');
     if (!subSaved) {
-      return { success: false, cost, remaining: 0, message: "Assinatura não encontrada." };
+      const defaultSub = {
+        planType: 'free',
+        status: 'free_tier',
+        currentPeriodStart: new Date().toISOString(),
+        currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+        usage: {
+          storiesCreatedThisPeriod: 0,
+          videosCreatedThisPeriod: 0,
+          taceCreditsConsumed: 0
+        },
+        cancelAtPeriodEnd: false,
+        billingCycle: 'mensal'
+      };
+      localStorage.setItem('toontales_subscription', JSON.stringify(defaultSub));
+      subSaved = JSON.stringify(defaultSub);
     }
 
     const sub = JSON.parse(subSaved);
