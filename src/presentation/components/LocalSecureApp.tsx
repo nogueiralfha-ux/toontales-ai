@@ -296,7 +296,16 @@ export const LocalSecureApp: React.FC = () => {
           ...story,
           createdAt: new Date(story.createdAt)
         }));
-        setStories(parsed);
+        
+        // Injeta as histórias demo caso elas ainda não estejam na lista
+        const hasDemo = parsed.some((s: any) => s.id === 'demo-infantil');
+        if (!hasDemo) {
+          const combined = [...DEMO_STORIES, ...parsed];
+          localStorage.setItem(storiesKey, JSON.stringify(combined));
+          setStories(combined);
+        } else {
+          setStories(parsed);
+        }
       } else {
         // Se a biblioteca estiver vazia, iniciamos com as duas histórias de exemplo premium
         localStorage.setItem(storiesKey, JSON.stringify(DEMO_STORIES));
