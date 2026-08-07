@@ -131,8 +131,19 @@ export class TaceEngine {
   ): { success: boolean; cost: number; remaining: number; message: string } {
     const cost = this.calculateCost(resource, quality, resolution, modelId, quantity);
     
-    // Get subscription
-    let subSaved = localStorage.getItem('toontales_subscription');
+    // Get subscription specific to the user
+    const subKey = userId && userId !== 'anonimo' ? `toontales_subscription_${userId}` : 'toontales_subscription';
+    let subSaved = localStorage.getItem(subKey);
+    
+    // Backwards compatibility migration
+    if (!subSaved && userId && userId !== 'anonimo') {
+      const globalSaved = localStorage.getItem('toontales_subscription');
+      if (globalSaved) {
+        subSaved = globalSaved;
+        localStorage.setItem(subKey, globalSaved);
+      }
+    }
+
     if (!subSaved) {
       const defaultSub = {
         planType: 'free',
@@ -147,7 +158,7 @@ export class TaceEngine {
         cancelAtPeriodEnd: false,
         billingCycle: 'mensal'
       };
-      localStorage.setItem('toontales_subscription', JSON.stringify(defaultSub));
+      localStorage.setItem(subKey, JSON.stringify(defaultSub));
       subSaved = JSON.stringify(defaultSub);
     }
 
@@ -160,7 +171,7 @@ export class TaceEngine {
     let currentBalance = sub.oneTimeCredits ? sub.oneTimeCredits * 300 : 0;
     
     if (sub.planType === 'free') {
-      currentBalance += 100; // default free starter credits
+      currentBalance += 0; // default free starter credits is 0 TC, forcing subscription or purchase
     } else if (sub.planType === 'hero') {
       currentBalance += 1500;
     } else if (sub.planType === 'professional') {
@@ -178,7 +189,7 @@ export class TaceEngine {
         success: false, 
         cost, 
         remaining: available, 
-        message: `Saldo insuficiente! Essa operação necessita de ${cost} TC, mas você possui apenas ${available} TC.` 
+        message: `Saldo insuficiente! Essa operação necessita de ${cost} TC, mas você possui apenas ${available} TC. Cadastre-se ou assine um plano para continuar.` 
       };
     }
 
@@ -191,7 +202,7 @@ export class TaceEngine {
           taceCreditsConsumed: consumed + cost
         }
       };
-      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+      localStorage.setItem(subKey, JSON.stringify(updatedSub));
     }
 
     // Save transaction log

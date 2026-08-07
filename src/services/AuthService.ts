@@ -2,6 +2,14 @@ export interface UserSession {
   email: string;
   role: 'admin' | 'user';
   expiresAt: string;
+  name?: string;
+}
+
+export interface RegisteredUser {
+  email: string;
+  passwordHash: string;
+  name: string;
+  createdAt: string;
 }
 
 const APP_SALT = 'toontales-secure-salt-2026';
@@ -22,9 +30,51 @@ export const AuthService = {
     return (4294967296 * (2097151 & h2) + (h1 >>> 0)).toString(16);
   },
 
-  saveSession(email: string, role: 'admin' | 'user') {
+  // Simple string hash helper to store password obfuscated
+  hashPassword(password: string): string {
+    let h = 0;
+    for (let i = 0; i < password.length; i++) {
+      h = Math.imul(31, h) + password.charCodeAt(i) | 0;
+    }
+    return h.toString(16);
+  },
+
+  getRegisteredUsers(): RegisteredUser[] {
+    try {
+      const saved = localStorage.getItem('toontales_registered_users');
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  },
+
+  registerUser(email: string, password: string, name: string): { success: boolean; message: string } {
+    const trimmedEmail = email.trim().toLowerCase();
+    if (!trimmedEmail || !password || !name) {
+      return { success: false, message: 'Todos os campos são obrigatórios.' };
+    }
+
+    const users = this.getRegisteredUsers();
+    if (users.some(u => u.email === trimmedEmail) || trimmedEmail === 'nogueiralfha@gmail.com') {
+      return { success: false, message: 'Este endereço de e-mail já está cadastrado.' };
+    }
+
+    const newUser: RegisteredUser = {
+      email: trimmedEmail,
+      passwordHash: this.hashPassword(password),
+      name: name.trim(),
+      createdAt: new Date().toISOString()
+    };
+
+    users.push(newUser);
+    localStorage.setItem('toontales_registered_users', JSON.stringify(users));
+
+    return { success: true, message: 'Conta criada com sucesso!' };
+  },
+
+  saveSession(email: string, role: 'admin' | 'user', name?: string) {
     const expiresAt = new Date(Date.now() + 2 * 60 * 60 * 1000).toISOString(); // 2 hours expiration
-    const session: UserSession = { email, role, expiresAt };
+    const session: UserSession = { email, role, expiresAt, name };
     const signature = this.generateSignature(session);
     
     localStorage.setItem('toontales_session', JSON.stringify({ session, signature }));
@@ -62,3 +112,4 @@ export const AuthService = {
     localStorage.removeItem('toontales_session');
   }
 };
+

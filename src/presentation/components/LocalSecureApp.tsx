@@ -34,7 +34,9 @@ export const LocalSecureApp: React.FC = () => {
   // User Subscription State
   const [subscription, setSubscription] = useState<UserSubscription>(() => {
     try {
-      const saved = localStorage.getItem('toontales_subscription');
+      const email = AuthService.getSession()?.email || 'anonimo';
+      const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+      const saved = localStorage.getItem(subKey);
       if (saved) {
         return JSON.parse(saved);
       }
@@ -84,45 +86,77 @@ export const LocalSecureApp: React.FC = () => {
     };
   }, []);
 
-  // Sync stories and session validation
+  // Sync stories, subscriptions and session validation
   useEffect(() => {
-    // Validate session
+    // Validate session on mount or change
     const currentSession = AuthService.getSession();
     setSession(currentSession);
+    
     if (currentSession) {
       if (currentSession.role === 'admin') {
         setCurrentView('admin');
       } else {
         setCurrentView('studio');
       }
+    } else {
+      setCurrentView('landing');
     }
 
+    const email = currentSession?.email || 'anonimo';
+    const storiesKey = email !== 'anonimo' ? `toontales_stories_${email}` : 'toontales_stories';
+    const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+
+    // Migrate from global storage if user specific does not exist yet
+    if (email !== 'anonimo') {
+      if (!localStorage.getItem(storiesKey) && localStorage.getItem('toontales_stories')) {
+        localStorage.setItem(storiesKey, localStorage.getItem('toontales_stories') || '[]');
+      }
+      if (!localStorage.getItem(subKey) && localStorage.getItem('toontales_subscription')) {
+        localStorage.setItem(subKey, localStorage.getItem('toontales_subscription') || '');
+      }
+    }
+
+    // Load Stories
     try {
-      const saved = localStorage.getItem('toontales_stories');
+      const saved = localStorage.getItem(storiesKey);
       if (saved) {
         const parsed = JSON.parse(saved).map((story: any) => ({
           ...story,
           createdAt: new Date(story.createdAt)
         }));
         setStories(parsed);
-
-        // Sync subscription usage
-        setSubscription(prev => {
-          const updated = {
-            ...prev,
-            usage: {
-              ...prev.usage,
-              storiesCreatedThisPeriod: parsed.length
-            }
-          };
-          localStorage.setItem('toontales_subscription', JSON.stringify(updated));
-          return updated;
-        });
+      } else {
+        setStories([]);
       }
     } catch (e) {
       console.error("Erro ao carregar histórias locais:", e);
     }
-  }, []);
+
+    // Load Subscription
+    try {
+      const saved = localStorage.getItem(subKey);
+      if (saved) {
+        setSubscription(JSON.parse(saved));
+      } else {
+        const defaultSub: UserSubscription = {
+          planType: 'free',
+          status: 'free_tier',
+          currentPeriodStart: new Date().toISOString(),
+          currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+          usage: {
+            storiesCreatedThisPeriod: 0,
+            videosCreatedThisPeriod: 0
+          },
+          cancelAtPeriodEnd: false,
+          billingCycle: 'mensal'
+        };
+        localStorage.setItem(subKey, JSON.stringify(defaultSub));
+        setSubscription(defaultSub);
+      }
+    } catch (e) {
+      console.error("Erro ao carregar assinatura:", e);
+    }
+  }, [session?.email]);
 
   const handleGenerateStory = async (
     theme: StoryTheme,
@@ -159,7 +193,9 @@ export const LocalSecureApp: React.FC = () => {
     );
 
     if (!deductResult.success) {
-      alert(deductResult.message);
+      if (window.confirm(`${deductResult.message}\n\nDeseja abrir o Painel dos Pais para gerenciar seus créditos e planos agora?`)) {
+        setActiveTab('parents');
+      }
       return;
     }
 
@@ -192,15 +228,19 @@ export const LocalSecureApp: React.FC = () => {
     }
     
     // Salva no estado
+    const email = session?.email || 'anonimo';
+    const storiesKey = email !== 'anonimo' ? `toontales_stories_${email}` : 'toontales_stories';
+    const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+
     const updatedStories = [newStory, ...stories];
     setStories(updatedStories);
-    localStorage.setItem('toontales_stories', JSON.stringify(updatedStories));
+    localStorage.setItem(storiesKey, JSON.stringify(updatedStories));
 
     // Grava no Cache para futuras consultas
     TaceEngine.setCache(cacheKey, newStory);
 
     // Atualiza a assinatura no localstorage para refletir o débito de créditos no estado local
-    const subSaved = localStorage.getItem('toontales_subscription');
+    const subSaved = localStorage.getItem(subKey);
     if (subSaved) {
       setSubscription(JSON.parse(subSaved));
     }
@@ -264,13 +304,16 @@ export const LocalSecureApp: React.FC = () => {
   const handleCheckoutSuccess = (paymentMethod: 'pix' | 'credit_card') => {
     if (!pendingPlan) return;
 
+    const email = session?.email || 'anonimo';
+    const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+
     if (pendingPlan.planType === 'single_story') {
       const updatedSub: UserSubscription = {
         ...subscription,
         oneTimeCredits: (subscription.oneTimeCredits || 0) + 1
       };
       setSubscription(updatedSub);
-      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+      localStorage.setItem(subKey, JSON.stringify(updatedSub));
       
       setShowCheckout(false);
       setPendingPlan(null);
@@ -310,7 +353,7 @@ export const LocalSecureApp: React.FC = () => {
     };
 
     setSubscription(updatedSub);
-    localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+    localStorage.setItem(subKey, JSON.stringify(updatedSub));
     setShowCheckout(false);
     setPendingPlan(null);
     setCurrentView('studio');
@@ -319,18 +362,24 @@ export const LocalSecureApp: React.FC = () => {
 
   const handleCancelSubscription = () => {
     if (window.confirm("Tem certeza que deseja cancelar sua assinatura ativa? Seus benefícios expirarão no final do ciclo atual.")) {
+      const email = session?.email || 'anonimo';
+      const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+
       const updatedSub: UserSubscription = {
         ...subscription,
         cancelAtPeriodEnd: true,
         status: 'canceled'
       };
       setSubscription(updatedSub);
-      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+      localStorage.setItem(subKey, JSON.stringify(updatedSub));
     }
   };
 
   const handleDowngradeToFree = () => {
     if (window.confirm("Deseja voltar para o plano gratuito imediatamente? Suas histórias não serão excluídas, mas os limites de criação voltarão ao padrão (2 por mês).")) {
+      const email = session?.email || 'anonimo';
+      const subKey = email !== 'anonimo' ? `toontales_subscription_${email}` : 'toontales_subscription';
+
       const updatedSub: UserSubscription = {
         planType: 'free',
         status: 'free_tier',
@@ -344,7 +393,7 @@ export const LocalSecureApp: React.FC = () => {
         billingCycle: 'mensal'
       };
       setSubscription(updatedSub);
-      localStorage.setItem('toontales_subscription', JSON.stringify(updatedSub));
+      localStorage.setItem(subKey, JSON.stringify(updatedSub));
     }
   };
 
