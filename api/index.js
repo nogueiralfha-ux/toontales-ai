@@ -3,7 +3,7 @@ import https from 'https';
 // Helper for Asaas Requests
 async function asaasRequest(method, path, body = null) {
   const asaasKey = process.env.ASAAS_API_KEY;
-  const asaasUrl = process.env.ASAAS_API_URL || 'https://api.asaas.com/v3';
+  const asaasUrl = process.env.ASAAS_API_URL || process.env['URL da API ASAAS'] || 'https://api.asaas.com/v3';
   const hostname = asaasUrl.replace('https://', '').split('/')[0];
 
   return new Promise((resolve, reject) => {
