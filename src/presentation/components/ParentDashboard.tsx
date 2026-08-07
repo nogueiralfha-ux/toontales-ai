@@ -349,13 +349,13 @@ export const ParentDashboard: React.FC<ParentDashboardProps> = ({
                 <div className="mt-2 p-5 bg-amber-50/40 border border-amber-200/50 rounded-2xl flex flex-col sm:flex-row justify-between items-center gap-4">
                   <div className="text-left">
                     <h5 className="text-sm font-black text-slate-800">🪙 Quer apenas testar ou criar uma única história?</h5>
-                    <p className="text-[11px] text-slate-500 mt-1">Compre créditos avulsos avulsamente para criar e baixar seu livro ou vídeo sem compromisso de assinatura.</p>
+                    <p className="text-[11px] text-slate-500 mt-1">Compre créditos avulsos para criar e baixar seu livro ou vídeo sem compromisso de assinatura.</p>
                   </div>
                   <button 
                     onClick={() => onBuySingleStory?.('Amiguinho', 'Aventura', '2-6', null)}
                     className="whitespace-nowrap px-5 py-3 bg-slate-900 hover:bg-slate-850 text-white font-extrabold text-xs rounded-xl shadow-md transition-all cursor-pointer"
                   >
-                    Comprar Crédito Avulso (R$ 19,90)
+                    Comprar Crédito Avulso (R$ 29,90)
                   </button>
                 </div>
               </div>
