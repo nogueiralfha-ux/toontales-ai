@@ -6,11 +6,12 @@ import { ColoringCanvas } from './ColoringCanvas';
 interface StoryViewerProps {
   story: Story;
   onBack: () => void;
+  onUpdateStory?: (updatedStory: Story) => void;
 }
 
 type TabType = 'video' | 'book' | 'coloring' | 'audio';
 
-export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
+export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdateStory }) => {
   const [activeTab, setActiveTab] = useState<TabType>('video');
   const [currentVideoScene, setCurrentVideoScene] = useState(0);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -23,6 +24,55 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
   const [waveSeed, setWaveSeed] = useState<number[]>([]);
   const [currentAudioScene, setCurrentAudioScene] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [generatingPages, setGeneratingPages] = useState<Record<number, boolean>>({});
+
+  // Lazy load images for subsequent pages dynamically
+  useEffect(() => {
+    const pageIndex = activeTab === 'audio' ? currentAudioScene : currentVideoScene;
+    const scene = story.scenes[pageIndex];
+    if (!scene || scene.illustrationUrl || generatingPages[pageIndex] || !onUpdateStory) return;
+
+    const loadLazyImage = async () => {
+      setGeneratingPages(prev => ({ ...prev, [pageIndex]: true }));
+      try {
+        console.log(`[Lazy Loading] Solicitando imagem para cena ${pageIndex + 1}...`);
+        const childPhoto = localStorage.getItem('toontales_pending_photo') || null;
+        
+        // Decidir modelo (se o da capa for data: base64, foi usado Imagen 3)
+        const isPremiumCover = story.scenes[0]?.illustrationUrl && story.scenes[0].illustrationUrl.startsWith('data:');
+        const imageModelId = isPremiumCover ? 'imagen-3' : 'flux-schnell';
+
+        const response = await fetch('/api/generate-scene-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            prompt: scene.text,
+            childPhoto,
+            imageModelId
+          })
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.imageUrl) {
+            const updatedScenes = story.scenes.map((s, idx) => 
+              idx === pageIndex 
+                ? { ...s, illustrationUrl: data.imageUrl, coloringUrl: data.imageUrl } 
+                : s
+            );
+            const updatedStory = { ...story, scenes: updatedScenes };
+            onUpdateStory(updatedStory);
+          }
+        }
+      } catch (err) {
+        console.error("[Lazy Loading] Erro ao carregar ilustração:", err);
+      } finally {
+        setGeneratingPages(prev => ({ ...prev, [pageIndex]: false }));
+      }
+    };
+
+    loadLazyImage();
+  }, [activeTab, currentVideoScene, currentAudioScene, story, generatingPages, onUpdateStory]);
 
   // Initialize random height multipliers for audio wave
   useEffect(() => {
@@ -263,7 +313,14 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
             
             {/* Premium Video Player Container */}
             <div className="relative aspect-[16/9] w-full bg-black rounded-2xl overflow-hidden border border-slate-900 flex items-center justify-center shadow-inner group">
-              {story.scenes[currentVideoScene].illustrationUrl ? (
+              {generatingPages[currentVideoScene] ? (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-300 gap-4">
+                  <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
+                  <p className="text-sm font-black font-serif animate-pulse text-amber-400">
+                    Desenhando Ilustração da Página {currentVideoScene + 1}... 🎨
+                  </p>
+                </div>
+              ) : story.scenes[currentVideoScene].illustrationUrl ? (
                 <img 
                   src={story.scenes[currentVideoScene].illustrationUrl} 
                   alt={`Cena ${currentVideoScene + 1}`}
@@ -378,6 +435,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
             storyTitle={story.title} 
             moralLesson={story.moralLesson} 
             bibleReference={story.bibleReference} 
+            generatingPages={generatingPages}
           />
         )}
 

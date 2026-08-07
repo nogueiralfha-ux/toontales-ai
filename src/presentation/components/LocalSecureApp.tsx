@@ -381,6 +381,15 @@ export const LocalSecureApp: React.FC = () => {
     }
   };
 
+  const handleUpdateStory = (updatedStory: Story) => {
+    const email = session?.email || 'anonimo';
+    const storiesKey = email !== 'anonimo' ? `toontales_stories_${email}` : 'toontales_stories';
+    const updatedList = stories.map(s => s.id === updatedStory.id ? updatedStory : s);
+    localStorage.setItem(storiesKey, JSON.stringify(updatedList));
+    setStories(updatedList);
+    setSelectedStory(updatedStory);
+  };
+
   const handleGenerateStory = async (
     theme: StoryTheme,
     ageGroup: AgeGroup,
@@ -829,7 +838,7 @@ export const LocalSecureApp: React.FC = () => {
       {/* Main Content Area */}
       <main className="max-w-6xl mx-auto px-6 mt-8">
         {selectedStory ? (
-          <StoryViewer story={selectedStory} onBack={() => setSelectedStory(null)} />
+          <StoryViewer story={selectedStory} onBack={() => setSelectedStory(null)} onUpdateStory={handleUpdateStory} />
         ) : (
           <>
             {activeTab === 'create' && (

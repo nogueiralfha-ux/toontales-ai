@@ -372,7 +372,10 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
 
         // Step A: Generate Image
         try {
-          const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
+          if (scene.pageNumber > 1) {
+            imageUrl = '';
+          } else {
+            const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
           
           if (useImagen && geminiKey && !geminiKey.includes('sua_chave')) {
             console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
@@ -502,6 +505,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             console.error("Contingência do Google Imagen 3 também falhou:", imagenErr);
           }
         }
+      }
 
         // Step B: Generate Audio and convert to base64 Data URI (serverless friendly)
         try {
@@ -563,6 +567,138 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
       };
 
       return res.status(200).json(finalStory);
+    }
+    // 4. Generate Scene Image (Lazy-loaded for pages 2+)
+    else if (req.method === 'POST' && pathname === '/api/generate-scene-image') {
+      const { prompt, childPhoto, parentPhoto, imageModelId } = req.body;
+
+      const falKey = process.env.FAL_KEY;
+      const geminiKey = process.env.GEMINI_API_KEY;
+
+      let imageUrl = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=600';
+
+      // Upload preliminar de fotos locais de rosto para a CDN do Fal.ai
+      let publicPhotoUrl = null;
+      if ((childPhoto || parentPhoto) && falKey && !falKey.includes('sua_chave')) {
+        try {
+          console.log("[AI Proxy Scene] Fazendo upload de foto para CDN do Fal.ai...");
+          const photoToUpload = childPhoto || parentPhoto;
+          if (photoToUpload.startsWith('data:')) {
+            publicPhotoUrl = await uploadBase64ToFal(photoToUpload, falKey);
+            console.log("[AI Proxy Scene] Upload concluído:", publicPhotoUrl);
+          } else {
+            publicPhotoUrl = photoToUpload;
+          }
+        } catch (uploadErr) {
+          console.error("[AI Proxy Scene] Falha no upload preliminar da foto de rosto:", uploadErr);
+        }
+      }
+
+      try {
+        const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
+        
+        if (useImagen && geminiKey && !geminiKey.includes('sua_chave')) {
+          console.log(`[AI Proxy Scene] Gerando imagem via Google Imagen 3...`);
+          const promptValue = `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
+          
+          const imagenResponse = await new Promise((resolve, reject) => {
+            const reqPost = https.request({
+              method: 'POST',
+              hostname: 'generativelanguage.googleapis.com',
+              path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+              headers: { 'Content-Type': 'application/json' }
+            }, (resPost) => {
+              let resData = '';
+              resPost.on('data', chunk => resData += chunk);
+              resPost.on('end', () => {
+                try { resolve(JSON.parse(resData)); } catch (e) { reject(e); }
+              });
+            });
+            reqPost.on('error', reject);
+            reqPost.write(JSON.stringify({
+              instances: [{ prompt: promptValue }],
+              parameters: { sampleCount: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" }
+            }));
+            reqPost.end();
+          });
+
+          if (imagenResponse.predictions && imagenResponse.predictions[0]) {
+            imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+          } else if (imagenResponse.error) {
+            throw new Error(imagenResponse.error.message || "Erro do Imagen 3");
+          }
+        } else if (falKey && !falKey.includes('sua_chave')) {
+          console.log(`[AI Proxy Scene] Gerando imagem via Fal.ai...`);
+          const isConsistent = !!publicPhotoUrl;
+          const bodyObj = isConsistent ? {
+            prompt: `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`,
+            reference_image_url: publicPhotoUrl,
+            image_size: "landscape_16_9"
+          } : {
+            prompt: `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`,
+            image_size: "landscape_16_9"
+          };
+
+          const falResponse = await new Promise((resolve, reject) => {
+            const reqPost = https.request({
+              method: 'POST',
+              hostname: 'fal.run',
+              path: isConsistent ? '/fal-ai/flux-pulid' : '/fal-ai/flux/schnell',
+              headers: {
+                'Authorization': `Key ${falKey}`,
+                'Content-Type': 'application/json'
+              }
+            }, (resPost) => {
+              let resData = '';
+              resPost.on('data', chunk => resData += chunk);
+              resPost.on('end', () => resolve(JSON.parse(resData)));
+            });
+            reqPost.on('error', reject);
+            reqPost.write(JSON.stringify(bodyObj));
+            reqPost.end();
+          });
+
+          if (falResponse.images && falResponse.images[0]) {
+            imageUrl = falResponse.images[0].url;
+          }
+        }
+      } catch (errImg) {
+        console.error(`Erro ao gerar imagem na contingência de cena:`, errImg);
+        // Tenta Imagen 3 se Fal.ai falhou
+        try {
+          if (geminiKey && !geminiKey.includes('sua_chave')) {
+            const promptValue = `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
+            const imagenResponse = await new Promise((resolve, reject) => {
+              const reqPost = https.request({
+                method: 'POST',
+                hostname: 'generativelanguage.googleapis.com',
+                path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                headers: { 'Content-Type': 'application/json' }
+              }, (resPost) => {
+                let resData = '';
+                resPost.on('data', chunk => resData += chunk);
+                resPost.on('end', () => {
+                  try { resolve(JSON.parse(resData)); } catch (e) { reject(e); }
+                });
+              });
+              reqPost.on('error', reject);
+              reqPost.write(JSON.stringify({
+                instances: [{ prompt: promptValue }],
+                parameters: { sampleCount: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" }
+              }));
+              reqPost.end();
+            });
+
+            if (imagenResponse.predictions && imagenResponse.predictions[0]) {
+              imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            }
+          }
+        } catch (errFallback) {
+          console.error("Erro no fallback de imagem da cena:", errFallback);
+        }
+      }
+
+      return res.status(200).json({ imageUrl });
     }
 
     return res.status(404).json({ error: 'Rota não encontrada' });
