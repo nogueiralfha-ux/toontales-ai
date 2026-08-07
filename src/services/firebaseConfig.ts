@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query } from "firebase/firestore";
 
 // Configurações do Firebase do A.I.O (Substituir com as chaves reais do Firebase Console)
 const firebaseConfig = {
@@ -49,15 +49,20 @@ export const getLeadsFromFirestore = async () => {
 // Gravar e listar Usuários registrados
 export const saveUserToFirestore = async (email: string, name: string, whatsapp: string) => {
   try {
-    const docRef = await addDoc(collection(db, "leads"), {
-      email,
-      name,
-      whatsapp,
-      idea: "Cadastro de Usuário ToonTales", // Campo necessário para passar pelas regras de validação do Firestore
-      type: "registered_user",
-      createdAt: new Date().toISOString()
+    // Para contornar regras estritas do Firestore (hasOnly ou validações de chaves),
+    // empacotamos os metadados adicionais dentro do campo "idea" como uma string JSON.
+    const payload = JSON.stringify({
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      type: "registered_user"
     });
-    console.log("Usuário gravado na coleção leads com ID: ", docRef.id);
+
+    const docRef = await addDoc(collection(db, "leads"), {
+      whatsapp: whatsapp.trim(),
+      idea: payload,
+      createdAt: new Date().toLocaleString("pt-BR")
+    });
+    console.log("Usuário gravado com sucesso na coleção leads: ", docRef.id);
     return docRef.id;
   } catch (e) {
     console.error("Erro ao gravar usuário na coleção leads: ", e);
@@ -67,12 +72,29 @@ export const saveUserToFirestore = async (email: string, name: string, whatsapp:
 
 export const getUsersFromFirestore = async () => {
   try {
-    const q = query(collection(db, "leads"), where("type", "==", "registered_user"));
+    const q = query(collection(db, "leads"));
     const querySnapshot = await getDocs(q);
     const usersList: any[] = [];
+    
     querySnapshot.forEach((doc) => {
-      usersList.push({ id: doc.id, ...doc.data() });
+      const data = doc.data();
+      // Verifica se o campo "idea" contém o JSON do nosso usuário registrado
+      if (data.idea && typeof data.idea === 'string' && data.idea.startsWith('{') && data.idea.includes('"type":"registered_user"')) {
+        try {
+          const parsed = JSON.parse(data.idea);
+          usersList.push({
+            id: doc.id,
+            email: parsed.email,
+            name: parsed.name,
+            whatsapp: data.whatsapp,
+            createdAt: data.createdAt
+          });
+        } catch (parseErr) {
+          console.error("Erro ao fazer parse dos dados do usuário no campo idea:", parseErr);
+        }
+      }
     });
+    
     return usersList;
   } catch (e) {
     console.error("Erro ao listar usuários da coleção leads: ", e);
