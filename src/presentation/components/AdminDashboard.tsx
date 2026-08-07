@@ -34,6 +34,7 @@ interface AIProvider {
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   const [activeTab, setActiveTab] = useState<'metrics' | 'users' | 'marketplace' | 'tace'>('metrics');
   const [taceConfig, setTaceConfig] = useState<TaceEngineConfig>(TaceEngine.getConfig());
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Simulated Users state
   const [users, setUsers] = useState<SimulatedUser[]>([
@@ -48,6 +49,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
   useEffect(() => {
     const loadRealUsers = async () => {
       try {
+        setLoadError(null);
         const realList = await getUsersFromFirestore();
         if (realList && realList.length > 0) {
           const formatted: SimulatedUser[] = realList.map((ru, idx) => ({
@@ -66,8 +68,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             return [...formatted, ...filteredPrev];
           });
         }
-      } catch (err) {
+      } catch (err: any) {
         console.error("Erro ao sincronizar usuários do Firestore:", err);
+        setLoadError(err.message || String(err));
       }
     };
     loadRealUsers();
@@ -207,6 +210,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             <div>
               <h3 className="text-xl font-bold text-slate-800">Controle de Assinantes</h3>
               <p className="text-slate-500 text-xs mt-1">Gerencie manualmente os privilégios e consulte os dados cadastrados.</p>
+              {loadError && (
+                <div className="p-3 mt-3 bg-red-50 text-red-650 text-xs font-bold rounded-xl border border-red-100">
+                  ⚠️ Erro ao carregar do Firebase: {loadError}
+                </div>
+              )}
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-left border-collapse">
