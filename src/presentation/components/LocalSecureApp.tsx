@@ -38,7 +38,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_elephant.jpg",
-        coloringUrl: "/demo/tito_elephant.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -47,7 +47,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_bird.jpg",
-        coloringUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -56,7 +56,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_bird.jpg",
-        coloringUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -65,7 +65,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_elephant.jpg",
-        coloringUrl: "/demo/tito_elephant.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -74,7 +74,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_forest.jpg",
-        coloringUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -83,7 +83,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_bird.jpg",
-        coloringUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -92,7 +92,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_forest.jpg",
-        coloringUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -101,7 +101,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/tito_forest.jpg",
-        coloringUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_coloring.jpg",
         audioUrl: ""
       }
     ]
@@ -122,7 +122,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -131,7 +131,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -140,7 +140,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -149,7 +149,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_working.jpg",
-        coloringUrl: "/demo/sofia_working.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -158,7 +158,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_working.jpg",
-        coloringUrl: "/demo/sofia_working.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -167,7 +167,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -176,7 +176,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       },
       {
@@ -185,7 +185,7 @@ const DEMO_STORIES: Story[] = [
         illustrationSvg: "",
         coloringSvg: "",
         illustrationUrl: "/demo/sofia_lighthouse.jpg",
-        coloringUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_coloring.jpg",
         audioUrl: ""
       }
     ]
@@ -297,10 +297,13 @@ export const LocalSecureApp: React.FC = () => {
           createdAt: new Date(story.createdAt)
         }));
         
-        // Injeta as histórias demo caso elas ainda não estejam na lista
+        // Injeta as histórias demo caso elas ainda não estejam na lista ou se contiverem URLs de colorir antigas
         const hasDemo = parsed.some((s: any) => s.id === 'demo-infantil');
-        if (!hasDemo) {
-          const combined = [...DEMO_STORIES, ...parsed];
+        const needsUpdate = hasDemo && parsed.some((s: any) => s.id === 'demo-infantil' && s.scenes[0].coloringUrl.includes('tito_elephant'));
+        
+        if (!hasDemo || needsUpdate) {
+          const filtered = parsed.filter((s: any) => s.id !== 'demo-infantil' && s.id !== 'demo-adulto');
+          const combined = [...DEMO_STORIES, ...filtered];
           localStorage.setItem(storiesKey, JSON.stringify(combined));
           setStories(combined);
         } else {

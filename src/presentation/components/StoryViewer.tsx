@@ -106,23 +106,71 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack }) => {
   // Audio Book simulation timer reacting to speeds (only if no real audioUrl)
   useEffect(() => {
     if (story.audioUrl) return;
-    let interval: any;
-    const totalDuration = story.scenes.length * 6; // 6s per page baseline
+    let fallbackTimeout: any;
 
     if (activeTab === 'audio' && isAudioPlaying) {
-      interval = setInterval(() => {
-        setAudioTimer(prev => {
-          const next = prev + 1 * audioSpeed;
-          if (next < totalDuration) {
-            return next;
-          }
+      const currentScene = story.scenes[currentAudioScene];
+      
+      window.speechSynthesis?.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(currentScene.text);
+      utterance.lang = 'pt-BR';
+      utterance.rate = 0.85 * audioSpeed;
+      utterance.pitch = 1.05;
+
+      const advanceScene = () => {
+        if (currentAudioScene < story.scenes.length - 1) {
+          setCurrentAudioScene(prev => prev + 1);
+          setAudioTimer(0);
+        } else {
           setIsAudioPlaying(false);
-          return 0;
-        });
-      }, 1000);
+          setCurrentAudioScene(0);
+          setAudioTimer(0);
+        }
+      };
+
+      utterance.onend = () => {
+        clearTimeout(fallbackTimeout);
+        advanceScene();
+      };
+      
+      utterance.onerror = () => {
+        clearTimeout(fallbackTimeout);
+        advanceScene();
+      };
+
+      window.speechSynthesis?.speak(utterance);
+
+      // Fallback timer
+      const wordsCount = currentScene.text.split(/\s+/).length;
+      const estimatedMs = Math.max(3000, (wordsCount * 450 + 2500) / audioSpeed);
+      fallbackTimeout = setTimeout(() => {
+        console.warn("[StoryViewer] Audio SpeechSynthesis onend did not fire. Advancing scene.");
+        advanceScene();
+      }, estimatedMs);
+
+    } else if (activeTab === 'audio') {
+      window.speechSynthesis?.cancel();
+    }
+
+    return () => {
+      if (activeTab === 'audio') {
+        window.speechSynthesis?.cancel();
+        clearTimeout(fallbackTimeout);
+      }
+    };
+  }, [activeTab, isAudioPlaying, currentAudioScene, story.scenes, audioSpeed, story.audioUrl]);
+
+  // Waveform animation timer
+  useEffect(() => {
+    let interval: any;
+    if (activeTab === 'audio' && isAudioPlaying) {
+      interval = setInterval(() => {
+        setAudioTimer(prev => prev + 1);
+      }, 100);
     }
     return () => clearInterval(interval);
-  }, [activeTab, isAudioPlaying, story.scenes, audioSpeed, story.audioUrl]);
+  }, [activeTab, isAudioPlaying]);
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60);

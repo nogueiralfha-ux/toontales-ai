@@ -227,7 +227,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
       const useGemini = modelId ? modelId.startsWith('gemini') : (geminiKey && !geminiKey.includes('sua_chave'));
       
       if (useGemini) {
-        const geminiModel = modelId === 'gemini-pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+        const geminiModel = 'gemini-1.5-flash';
         console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
         try {
           const geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
