@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query, where } from "firebase/firestore";
 
 // Configurações do Firebase do A.I.O (Substituir com as chaves reais do Firebase Console)
 const firebaseConfig = {
@@ -49,23 +49,24 @@ export const getLeadsFromFirestore = async () => {
 // Gravar e listar Usuários registrados
 export const saveUserToFirestore = async (email: string, name: string, whatsapp: string) => {
   try {
-    const docRef = await addDoc(collection(db, "users"), {
+    const docRef = await addDoc(collection(db, "leads"), {
       email,
       name,
       whatsapp,
+      type: "registered_user",
       createdAt: new Date().toISOString()
     });
-    console.log("Usuário gravado no Firestore com ID: ", docRef.id);
+    console.log("Usuário gravado na coleção leads com ID: ", docRef.id);
     return docRef.id;
   } catch (e) {
-    console.error("Erro ao gravar usuário no Firebase Firestore: ", e);
+    console.error("Erro ao gravar usuário na coleção leads: ", e);
     throw e;
   }
 };
 
 export const getUsersFromFirestore = async () => {
   try {
-    const q = query(collection(db, "users"));
+    const q = query(collection(db, "leads"), where("type", "==", "registered_user"));
     const querySnapshot = await getDocs(q);
     const usersList: any[] = [];
     querySnapshot.forEach((doc) => {
@@ -73,7 +74,7 @@ export const getUsersFromFirestore = async () => {
     });
     return usersList;
   } catch (e) {
-    console.error("Erro ao listar usuários do Firebase Firestore: ", e);
+    console.error("Erro ao listar usuários da coleção leads: ", e);
     return [];
   }
 };
