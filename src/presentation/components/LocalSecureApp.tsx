@@ -365,6 +365,19 @@ export const LocalSecureApp: React.FC = () => {
     loadAndSyncSubscription();
   }, [session?.email]);
 
+  const handleDeleteStory = (storyId: string) => {
+    if (window.confirm("Tem certeza que deseja excluir esta história permanentemente da sua biblioteca?")) {
+      const email = session?.email || 'anonimo';
+      const storiesKey = email !== 'anonimo' ? `toontales_stories_${email}` : 'toontales_stories';
+      const updated = stories.filter(s => s.id !== storyId);
+      localStorage.setItem(storiesKey, JSON.stringify(updated));
+      setStories(updated);
+      if (selectedStory?.id === storyId) {
+        setSelectedStory(null);
+      }
+    }
+  };
+
   const handleGenerateStory = async (
     theme: StoryTheme,
     ageGroup: AgeGroup,
@@ -880,6 +893,19 @@ export const LocalSecureApp: React.FC = () => {
                           }`}>
                             {story.theme}
                           </span>
+
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleDeleteStory(story.id);
+                            }}
+                            className="absolute top-4 right-4 bg-red-500/80 hover:bg-red-600 border border-red-400/30 text-white p-2 rounded-full shadow-md hover:scale-110 active:scale-95 transition-all duration-200 z-10"
+                            title="Excluir história"
+                          >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                          </button>
                         </div>
 
                         {/* Story info */}
