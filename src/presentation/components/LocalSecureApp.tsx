@@ -37,8 +37,8 @@ const DEMO_STORIES: Story[] = [
         text: "Tito era um elefantinho azul muito simpático que vivia na Floresta Feliz. Ele adorava caminhar e observar as cores da natureza.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1534447677768-be436bb09401?q=80&w=600",
+        illustrationUrl: "/demo/tito_elephant.jpg",
+        coloringUrl: "/demo/tito_elephant.jpg",
         audioUrl: ""
       },
       {
@@ -46,8 +46,8 @@ const DEMO_STORIES: Story[] = [
         text: "Um dia, Tito encontrou Pip, um passarinho amarelo que estava triste por ter perdido seu ninho favorito na grande árvore.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1518887570146-0612132dd618?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1518887570146-0612132dd618?q=80&w=600",
+        illustrationUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_bird.jpg",
         audioUrl: ""
       },
       {
@@ -55,8 +55,8 @@ const DEMO_STORIES: Story[] = [
         text: "Tito sorriu e disse: 'Não se preocupe, Pip! Vamos dar graças pelo dia de hoje e trabalhar juntos para construir algo ainda mais bonito.'",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1507679799987-c73779587ccf?q=80&w=600",
+        illustrationUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_bird.jpg",
         audioUrl: ""
       },
       {
@@ -64,8 +64,8 @@ const DEMO_STORIES: Story[] = [
         text: "Eles juntaram gravetos macios e folhas coloridas. A cada raminho que achavam, agradeciam pelo vento morno e pelo sol brilhante.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1472491235688-bdc81a63246e?q=80&w=600",
+        illustrationUrl: "/demo/tito_elephant.jpg",
+        coloringUrl: "/demo/tito_elephant.jpg",
         audioUrl: ""
       },
       {
@@ -73,8 +73,8 @@ const DEMO_STORIES: Story[] = [
         text: "Ao entardecer, o novo ninho estava pronto! Era forte, seguro e brilhava sob um lindo arco-íris que surgiu no céu.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1579546929518-9e396f3cc809?q=80&w=600",
+        illustrationUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_forest.jpg",
         audioUrl: ""
       },
       {
@@ -82,8 +82,8 @@ const DEMO_STORIES: Story[] = [
         text: "Pip cantou uma melodia alegre para Tito. Tito sentiu seu coração quentinho e percebeu que a amizade é o melhor presente de todos.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1516624683217-bf02fc6b6b7c?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1516624683217-bf02fc6b6b7c?q=80&w=600",
+        illustrationUrl: "/demo/tito_bird.jpg",
+        coloringUrl: "/demo/tito_bird.jpg",
         audioUrl: ""
       },
       {
@@ -91,8 +91,8 @@ const DEMO_STORIES: Story[] = [
         text: "Os outros animais da floresta vieram ver e aprenderam que agradecer transforma qualquer dia difícil em uma linda aventura.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1502082553048-f009c37129b9?q=80&w=600",
+        illustrationUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_forest.jpg",
         audioUrl: ""
       },
       {
@@ -100,8 +100,8 @@ const DEMO_STORIES: Story[] = [
         text: "Tito deitou sob as estrelas piscantes, agradecendo por sua casinha, por Pip e por cada história de amor que viveria no amanhã.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1490730141103-6cac27aaab94?q=80&w=600",
+        illustrationUrl: "/demo/tito_forest.jpg",
+        coloringUrl: "/demo/tito_forest.jpg",
         audioUrl: ""
       }
     ]
@@ -121,8 +121,8 @@ const DEMO_STORIES: Story[] = [
         text: "Sofia cresceu na pequena Vila dos Ventos, um lugar cercado por montanhas rochosas e um mar misterioso que desafiava a todos.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       },
       {
@@ -130,8 +130,8 @@ const DEMO_STORIES: Story[] = [
         text: "Seu grande sonho era guiar os barcos de pesca através da neblina espessa instalada nas noites frias de inverno.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1475924156734-496f6cac6ec1?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       },
       {
@@ -139,8 +139,8 @@ const DEMO_STORIES: Story[] = [
         text: "Os mais experientes diziam que era impossível domar a neblina sem um farol moderno, que a vila não tinha condições de comprar.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1469474968028-56623f02e42e?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       },
       {
@@ -148,8 +148,8 @@ const DEMO_STORIES: Story[] = [
         text: "Sem se abalar, Sofia decidiu construir um refletor artesanal utilizando vidros coloridos descartados e óleo de sementes locais.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1447752875215-b2761acb3c5d?q=80&w=600",
+        illustrationUrl: "/demo/sofia_working.jpg",
+        coloringUrl: "/demo/sofia_working.jpg",
         audioUrl: ""
       },
       {
@@ -157,8 +157,8 @@ const DEMO_STORIES: Story[] = [
         text: "Trabalhou incansavelmente durante semanas na torre abandonada, limpando as engrenagens de ferro sob chuva e vento forte.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?q=80&w=600",
+        illustrationUrl: "/demo/sofia_working.jpg",
+        coloringUrl: "/demo/sofia_working.jpg",
         audioUrl: ""
       },
       {
@@ -166,8 +166,8 @@ const DEMO_STORIES: Story[] = [
         text: "Na primeira noite de tempestade do ano, as luzes da torre piscaram e finalmente acenderam, emitindo um brilho dourado e acolhedor.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1465146344425-f00d5f5c8f07?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       },
       {
@@ -175,8 +175,8 @@ const DEMO_STORIES: Story[] = [
         text: "Os pescadores que estavam perdidos no mar avistaram o feixe dourado de Sofia e conseguiram retornar seguros para o porto.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1472214222555-d404758b1c42?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1472214222555-d404758b1c42?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       },
       {
@@ -184,8 +184,8 @@ const DEMO_STORIES: Story[] = [
         text: "Sofia provou que com determinação, fé e criatividade, é possível iluminar os caminhos mais difíceis e proteger quem amamos.",
         illustrationSvg: "",
         coloringSvg: "",
-        illustrationUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600",
-        coloringUrl: "https://images.unsplash.com/photo-1501854140801-50d01698950b?q=80&w=600",
+        illustrationUrl: "/demo/sofia_lighthouse.jpg",
+        coloringUrl: "/demo/sofia_lighthouse.jpg",
         audioUrl: ""
       }
     ]
