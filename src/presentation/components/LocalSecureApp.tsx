@@ -171,7 +171,7 @@ export const LocalSecureApp: React.FC = () => {
       const response = await fetch(`${BACKEND_URL}/api/generate-story`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ theme, ageGroup, prompt, childPhoto, parentPhoto })
+        body: JSON.stringify({ theme, ageGroup, prompt, childPhoto, parentPhoto, modelId: bestModel.modelId })
       });
       if (!response.ok) throw new Error("Erro na chamada de API do proxy");
       const data = await response.json();

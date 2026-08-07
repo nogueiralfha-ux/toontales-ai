@@ -119,7 +119,7 @@ export default async function handler(req, res) {
 
     // 3. Generate Story using Real AI APIs (OpenAI + Fal.ai/Replicate)
     else if (req.method === 'POST' && pathname === '/api/generate-story') {
-      const { theme, ageGroup, prompt, childPhoto, parentPhoto } = req.body;
+      const { theme, ageGroup, prompt, childPhoto, parentPhoto, modelId } = req.body;
 
       const openAiKey = process.env.OPENAI_API_KEY;
       const replicateKey = process.env.REPLICATE_API_KEY;
@@ -158,14 +158,18 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
 
       let storyTextData;
 
-      // Generate text with Gemini or OpenAI
-      if (geminiKey && !geminiKey.includes('sua_chave')) {
-        console.log(`[AI Proxy] Gerando texto com Google Gemini 1.5 Flash...`);
+      // Dynamic AI Routing based on TACE selection
+      const useGemini = modelId ? modelId.startsWith('gemini') : (geminiKey && !geminiKey.includes('sua_chave'));
+      
+      if (useGemini) {
+        // Map TACE modelId to official Gemini API model identifier
+        const geminiModel = modelId === 'gemini-pro' ? 'gemini-1.5-pro' : 'gemini-1.5-flash';
+        console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
         const geminiResponse = await new Promise((resolve, reject) => {
           const reqPost = https.request({
             method: 'POST',
             hostname: 'generativelanguage.googleapis.com',
-            path: `/v1beta/models/gemini-1.5-flash:generateContent?key=${geminiKey}`,
+            path: `/v1beta/models/${geminiModel}:generateContent?key=${geminiKey}`,
             headers: { 'Content-Type': 'application/json' }
           }, (resPost) => {
             let resData = '';
@@ -183,7 +187,9 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         const rawText = geminiResponse.candidates[0].content.parts[0].text;
         storyTextData = JSON.parse(rawText);
       } else {
-        console.log(`[AI Proxy] Gerando texto com OpenAI GPT-4o-Mini...`);
+        // Map TACE modelId to official OpenAI API model identifier
+        const openAiModel = modelId === 'gpt-4o' ? 'gpt-4o' : 'gpt-4o-mini';
+        console.log(`[AI Proxy TACE] Gerando texto com OpenAI GPT (${openAiModel})...`);
         const openAiResponse = await new Promise((resolve, reject) => {
           const reqPost = https.request({
             method: 'POST',
@@ -200,7 +206,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           });
           reqPost.on('error', reject);
           reqPost.write(JSON.stringify({
-            model: 'gpt-4o-mini',
+            model: openAiModel,
             response_format: { type: "json_object" },
             messages: [
               { role: 'system', content: promptSystem },
