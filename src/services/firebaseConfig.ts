@@ -1,5 +1,5 @@
 import { initializeApp } from "firebase/app";
-import { getFirestore, collection, addDoc, getDocs, query } from "firebase/firestore";
+import { getFirestore, collection, addDoc, getDocs, query, doc, updateDoc } from "firebase/firestore";
 
 // Configurações do Firebase do A.I.O (Substituir com as chaves reais do Firebase Console)
 const firebaseConfig = {
@@ -54,7 +54,9 @@ export const saveUserToFirestore = async (email: string, name: string, whatsapp:
     const payload = JSON.stringify({
       email: email.trim().toLowerCase(),
       name: name.trim(),
-      type: "registered_user"
+      type: "registered_user",
+      plan: "free",
+      billingCycle: "N/A"
     });
 
     const docRef = await addDoc(collection(db, "leads"), {
@@ -87,6 +89,8 @@ export const getUsersFromFirestore = async () => {
             email: parsed.email,
             name: parsed.name,
             whatsapp: data.whatsapp,
+            plan: parsed.plan || 'free',
+            billingCycle: parsed.billingCycle || 'N/A',
             createdAt: data.createdAt
           });
         } catch (parseErr) {
@@ -99,6 +103,37 @@ export const getUsersFromFirestore = async () => {
   } catch (e) {
     console.error("Erro ao listar usuários da coleção leads: ", e);
     return [];
+  }
+};
+
+// Atualizar o plano e ciclo de cobrança do usuário no Firestore
+export const updateUserPlanInFirestore = async (
+  docId: string, 
+  email: string, 
+  name: string, 
+  whatsapp: string, 
+  newPlan: string, 
+  billingCycle: string
+) => {
+  try {
+    const payload = JSON.stringify({
+      email: email.trim().toLowerCase(),
+      name: name.trim(),
+      type: "registered_user",
+      plan: newPlan,
+      billingCycle: billingCycle
+    });
+
+    const docRef = doc(db, "leads", docId);
+    await updateDoc(docRef, {
+      idea: payload,
+      whatsapp: whatsapp.trim()
+    });
+    console.log("Plano do usuário atualizado no Firestore com sucesso!");
+    return true;
+  } catch (e) {
+    console.error("Erro ao atualizar o plano do usuário no Firestore: ", e);
+    throw e;
   }
 };
 

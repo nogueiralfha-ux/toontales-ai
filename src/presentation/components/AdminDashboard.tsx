@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { PlanType } from '../../domain/Subscription';
 import { TaceEngine, TaceEngineConfig, TaceQuality, TaceResolution, TaceResourceType } from '../../services/TaceEngine';
-import { getUsersFromFirestore } from '../../services/firebaseConfig';
+import { getUsersFromFirestore, updateUserPlanInFirestore } from '../../services/firebaseConfig';
 
 interface AdminDashboardProps {
   onLogout: () => void;
@@ -56,8 +56,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
             id: ru.id || `db-${idx}`,
             name: ru.name || 'Sem Nome',
             email: ru.email,
-            plan: 'free',
-            billingCycle: 'N/A',
+            plan: (ru.plan || 'free') as PlanType,
+            billingCycle: (ru.billingCycle || 'N/A') as 'mensal' | 'anual' | 'N/A',
             dateJoined: ru.createdAt ? ru.createdAt.split('T')[0] : new Date().toISOString().split('T')[0],
             asaasCustomerId: 'Firestore Cloud',
             whatsapp: ru.whatsapp
@@ -86,17 +86,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({ onLogout }) => {
     { id: '6', name: 'Luma Dream Machine (Video)', category: 'video', model: 'luma-ray-1-6', endpoint: 'https://api.lumalabs.ai/v1/video', status: 'inactive', priority: 1, costPerUse: 15.0, speedMs: 8000, qualityScore: 8.5 }
   ]);
 
-  const handleUpdatePlan = (userId: string, newPlan: PlanType) => {
+  const handleUpdatePlan = async (userId: string, newPlan: PlanType) => {
+    const user = users.find(u => u.id === userId);
+    if (!user) return;
+
+    const cycle = newPlan === 'free' ? 'N/A' : (user.billingCycle === 'N/A' ? 'mensal' : user.billingCycle);
+
+    // Update locally first
     setUsers(users.map(u => {
       if (u.id === userId) {
         return {
           ...u,
           plan: newPlan,
-          billingCycle: newPlan === 'free' ? 'N/A' : u.billingCycle === 'N/A' ? 'mensal' : u.billingCycle
+          billingCycle: cycle
         };
       }
       return u;
     }));
+
+    // Sync to Firestore if it's a real user from database
+    if (userId.startsWith('db-') || !userId.match(/^\d+$/)) {
+      try {
+        await updateUserPlanInFirestore(userId, user.email, user.name, user.whatsapp || '', newPlan, cycle);
+      } catch (err) {
+        console.error("Erro ao sincronizar plano com o Firestore:", err);
+        alert("Erro ao salvar alteração de plano na nuvem.");
+      }
+    }
   };
 
   const handleToggleProvider = (providerId: string) => {

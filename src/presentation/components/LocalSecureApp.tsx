@@ -10,6 +10,7 @@ import { CheckoutModal } from './CheckoutModal';
 import { LoginScreen } from './LoginScreen';
 import { AdminDashboard } from './AdminDashboard';
 import { AuthService, UserSession } from '../../services/AuthService';
+import { getUsersFromFirestore } from '../../services/firebaseConfig';
 import '../styles/index.css';
 
 export const BACKEND_URL = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
@@ -132,30 +133,54 @@ export const LocalSecureApp: React.FC = () => {
       console.error("Erro ao carregar histórias locais:", e);
     }
 
-    // Load Subscription
-    try {
-      const saved = localStorage.getItem(subKey);
-      if (saved) {
-        setSubscription(JSON.parse(saved));
-      } else {
-        const defaultSub: UserSubscription = {
+    // Load and Sync Subscription
+    const loadAndSyncSubscription = async () => {
+      try {
+        const saved = localStorage.getItem(subKey);
+        let currentSub: UserSubscription = saved ? JSON.parse(saved) : {
           planType: 'free',
           status: 'free_tier',
           currentPeriodStart: new Date().toISOString(),
           currentPeriodEnd: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
           usage: {
             storiesCreatedThisPeriod: 0,
-            videosCreatedThisPeriod: 0
+            videosCreatedThisPeriod: 0,
+            taceCreditsConsumed: 0
           },
           cancelAtPeriodEnd: false,
           billingCycle: 'mensal'
         };
-        localStorage.setItem(subKey, JSON.stringify(defaultSub));
-        setSubscription(defaultSub);
+
+        // Sync with Firestore Cloud to get latest plan updated by Admin
+        if (email !== 'anonimo') {
+          try {
+            const cloudUsers = await getUsersFromFirestore();
+            const cloudUser = cloudUsers.find(u => u.email === email);
+            if (cloudUser) {
+              const cloudPlan = cloudUser.plan || 'free';
+              if (currentSub.planType !== cloudPlan || currentSub.billingCycle !== cloudUser.billingCycle) {
+                console.log(`[Cloud Sync] Atualizando plano local do usuário de ${currentSub.planType} para ${cloudPlan}`);
+                currentSub = {
+                  ...currentSub,
+                  planType: cloudPlan as PlanType,
+                  status: cloudPlan === 'free' ? 'free_tier' : 'active',
+                  billingCycle: (cloudUser.billingCycle || 'mensal') as 'mensal' | 'anual'
+                };
+                localStorage.setItem(subKey, JSON.stringify(currentSub));
+              }
+            }
+          } catch (cloudErr) {
+            console.error("Erro ao sincronizar assinatura com o Firestore:", cloudErr);
+          }
+        }
+
+        setSubscription(currentSub);
+      } catch (e) {
+        console.error("Erro ao carregar assinatura:", e);
       }
-    } catch (e) {
-      console.error("Erro ao carregar assinatura:", e);
-    }
+    };
+
+    loadAndSyncSubscription();
   }, [session?.email]);
 
   const handleGenerateStory = async (
