@@ -48,7 +48,7 @@ async function generateTextWithGemini(modelName, apiKey, promptSystem, userInstr
     const reqPost = https.request({
       method: 'POST',
       hostname: 'generativelanguage.googleapis.com',
-      path: `/v1beta/models/${modelName}:generateContent?key=${apiKey}`,
+      path: `/v1/models/${modelName}:generateContent?key=${apiKey}`,
       headers: { 'Content-Type': 'application/json' }
     }, (resPost) => {
       let resData = '';
