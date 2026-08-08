@@ -417,7 +417,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             });
 
             if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-              imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+              const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+              if (falKey && !falKey.includes('sua_chave')) {
+                try {
+                  imageUrl = await uploadBase64ToFal(base64Img, falKey);
+                } catch (errUpload) {
+                  console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                  imageUrl = base64Img;
+                }
+              } else {
+                imageUrl = base64Img;
+              }
             } else if (imagenResponse.error) {
               throw new Error(imagenResponse.error.message || "Erro desconhecido do Google Imagen 3");
             } else {
@@ -500,7 +510,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               });
 
               if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-                imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+                const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+                if (falKey && !falKey.includes('sua_chave')) {
+                  try {
+                    imageUrl = await uploadBase64ToFal(base64Img, falKey);
+                  } catch (errUpload) {
+                    console.error("Falha ao subir imagem Imagen 3 (fallback) para Fal:", errUpload);
+                    imageUrl = base64Img;
+                  }
+                } else {
+                  imageUrl = base64Img;
+                }
                 console.log(`[AI Proxy Contingência] Imagem gerada com sucesso via Google Imagen 3 para cena ${scene.pageNumber}!`);
               }
             }
@@ -625,7 +645,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           });
 
           if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-            imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            if (falKey && !falKey.includes('sua_chave')) {
+              try {
+                imageUrl = await uploadBase64ToFal(base64Img, falKey);
+              } catch (errUpload) {
+                console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                imageUrl = base64Img;
+              }
+            } else {
+              imageUrl = base64Img;
+            }
           } else if (imagenResponse.error) {
             throw new Error(imagenResponse.error.message || "Erro do Imagen 3");
           }
@@ -692,7 +722,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             });
 
             if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-              imageUrl = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+              const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+              if (falKey && !falKey.includes('sua_chave')) {
+                try {
+                  imageUrl = await uploadBase64ToFal(base64Img, falKey);
+                } catch (errUpload) {
+                  console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                  imageUrl = base64Img;
+                }
+              } else {
+                imageUrl = base64Img;
+              }
             }
           }
         } catch (errFallback) {
