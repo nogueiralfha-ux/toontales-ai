@@ -103,6 +103,8 @@ async function generateTextWithOpenAI(modelName, apiKey, promptSystem, userInstr
     }));
     reqPost.end();
   });
+}
+
 // Helper para upload de imagens base64 para a CDN do Fal.ai
 async function uploadBase64ToFal(base64Data, falKey) {
   const cleanBase64 = base64Data.replace(/^data:image\/\w+;base64,/, "");
@@ -456,7 +458,8 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               imageUrl = falResponse.images[0].url;
             }
           }
-        } catch (errImg) {
+        }
+      } catch (errImg) {
           console.error(`Fal.ai falhou, tentando Google Imagen 3 como contingência...`, errImg);
           try {
             if (geminiKey && !geminiKey.includes('sua_chave')) {
