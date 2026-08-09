@@ -231,6 +231,7 @@ export const LocalSecureApp: React.FC = () => {
 
   const [showCheckout, setShowCheckout] = useState(false);
   const [pendingPlan, setPendingPlan] = useState<{ planType: PlanType | 'single_story'; billingCycle: 'mensal' | 'anual'; price: number } | null>(null);
+  const [surchargePaid, setSurchargePaid] = useState(false);
 
   // Block right-clicks and inspect element keys for maximum security
   useEffect(() => {
@@ -395,8 +396,30 @@ export const LocalSecureApp: React.FC = () => {
     ageGroup: AgeGroup,
     prompt: string,
     childPhoto: string | null,
-    parentPhoto: string | null
+    parentPhoto: string | null,
+    videoDuration?: 'curto' | 'medio' | 'longo'
   ) => {
+    // Valida cobrança excedente de duração de vídeo
+    if (videoDuration && videoDuration !== 'curto' && !surchargePaid) {
+      const surcharge = videoDuration === 'medio' ? 59.00 : 79.00;
+      if (window.confirm(`Você selecionou a duração de vídeo estendida (${videoDuration === 'medio' ? '5 a 7' : '8 a 10'} minutos).\nEsta opção requer um pagamento adicional excedente de R$ ${surcharge.toFixed(2)} no Pix.\n\nDeseja realizar o pagamento agora para liberar a geração?`)) {
+        setPendingPlan({
+          planType: 'single_story',
+          billingCycle: 'mensal',
+          price: surcharge
+        });
+        localStorage.setItem('toontales_pending_photo', childPhoto || '');
+        localStorage.setItem('toontales_pending_theme', theme);
+        localStorage.setItem('toontales_pending_age', ageGroup);
+        localStorage.setItem('toontales_pending_prompt', prompt);
+        localStorage.setItem('toontales_pending_duration', videoDuration);
+        setShowCheckout(true);
+        return;
+      } else {
+        return;
+      }
+    }
+
     const quality: TaceQuality = ageGroup === 'adulto' ? 'premium' : 
                                (subscription.planType === 'free' ? 'economica' : 
                                (subscription.planType === 'hero' ? 'padrao' : 'premium'));
@@ -409,6 +432,7 @@ export const LocalSecureApp: React.FC = () => {
       const updatedStories = [cachedStory, ...stories];
       setStories(updatedStories);
       setSelectedStory(cachedStory);
+      setSurchargePaid(false); // Reset flag
       return;
     }
 
@@ -429,6 +453,7 @@ export const LocalSecureApp: React.FC = () => {
       if (window.confirm(`${deductResult.message}\n\nDeseja abrir o Painel dos Pais para gerenciar seus créditos e planos agora?`)) {
         setActiveTab('parents');
       }
+      setSurchargePaid(false); // Reset flag
       return;
     }
 
@@ -491,6 +516,7 @@ export const LocalSecureApp: React.FC = () => {
     }
 
     setSelectedStory(newStory);
+    setSurchargePaid(false);
   };
 
   const handleSelectStory = (story: Story) => {
@@ -568,15 +594,20 @@ export const LocalSecureApp: React.FC = () => {
       const pendingTheme = localStorage.getItem('toontales_pending_theme') || 'Aventura';
       const pendingAge = localStorage.getItem('toontales_pending_age') || '2-6';
       const pendingPhoto = localStorage.getItem('toontales_pending_photo') || null;
+      const pendingPrompt = localStorage.getItem('toontales_pending_prompt') || `Escreva uma linda homenagem personalizada para ${pendingName}.`;
+      const pendingDuration = localStorage.getItem('toontales_pending_duration') || 'curto';
 
       alert(`Pagamento Confirmado! Criando sua história completa de homenagem para "${pendingName}" agora...`);
       
+      setSurchargePaid(true); // Bypass surcharge check
+
       handleGenerateStory(
         pendingTheme as any,
         pendingAge as any,
-        `Escreva uma linda homenagem personalizada para ${pendingName}.`,
+        pendingPrompt,
         pendingPhoto,
-        null
+        null,
+        pendingDuration as any
       );
       
       setCurrentView('studio');

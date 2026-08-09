@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { StoryTheme, AgeGroup } from '../../domain/Story';
 
 interface StoryCreatorProps {
-  onGenerate: (theme: StoryTheme, ageGroup: AgeGroup, prompt: string, childPhoto: string | null, parentPhoto: string | null) => Promise<void>;
+  onGenerate: (theme: StoryTheme, ageGroup: AgeGroup, prompt: string, childPhoto: string | null, parentPhoto: string | null, videoDuration?: 'curto' | 'medio' | 'longo') => Promise<void>;
 }
 
 export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
@@ -16,6 +16,7 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [loadingStep, setLoadingStep] = useState(0);
   const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [videoDuration, setVideoDuration] = useState<'curto' | 'medio' | 'longo'>('curto');
 
   const loadingMessages = [
     'Escrevendo o roteiro da história...',
@@ -135,7 +136,7 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
     }
 
     try {
-      await onGenerate(theme, ageGroup, finalPrompt, childPhoto, parentPhoto);
+      await onGenerate(theme, ageGroup, finalPrompt, childPhoto, parentPhoto, videoDuration);
     } catch (err) {
       console.error(err);
     } finally {
@@ -347,6 +348,51 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Duração do Vídeo Animado */}
+          <div className="flex flex-col gap-2 border-t border-slate-800/80 pt-6">
+            <label className="text-xs font-black text-slate-400 uppercase tracking-widest flex items-center gap-2">
+              🎬 Escolha a Duração do Vídeo Animado
+            </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setVideoDuration('curto')}
+                className={`py-3 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  videoDuration === 'curto'
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] scale-102'
+                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-900/60'
+                }`}
+              >
+                <span>Curto (Até 4 min)</span>
+                <span className="text-[9px] font-normal opacity-80">Incluso no Plano</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoDuration('medio')}
+                className={`py-3 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  videoDuration === 'medio'
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] scale-102'
+                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-900/60'
+                }`}
+              >
+                <span>Médio (5 a 7 min)</span>
+                <span className="text-[9px] font-bold text-amber-500">+ R$ 59,00 avulso</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setVideoDuration('longo')}
+                className={`py-3 px-3 rounded-xl font-bold text-xs transition-all border cursor-pointer flex flex-col items-center justify-center gap-1 ${
+                  videoDuration === 'longo'
+                    ? 'bg-amber-500/20 text-amber-400 border-amber-500/50 shadow-[0_0_15px_rgba(245,158,11,0.15)] scale-102'
+                    : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-900/60'
+                }`}
+              >
+                <span>Longo (8 a 10 min)</span>
+                <span className="text-[9px] font-bold text-amber-500">+ R$ 79,00 avulso</span>
+              </button>
             </div>
           </div>
 
