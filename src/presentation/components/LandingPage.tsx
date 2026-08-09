@@ -513,10 +513,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                 </div>
                 <ul className="text-slate-355 text-xs font-medium space-y-3.5 border-t border-slate-800/60 pt-6">
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-500">✓</span> 15 histórias ilustradas por mês
+                    <span className="text-amber-500">✓</span> 10 histórias ilustradas por mês
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-500">✓</span> 3 vídeos de 4 minutos por mês
+                    <span className="text-amber-500">✓</span> 1 vídeo animado de 4 min por mês
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="text-amber-500">✓</span> Estúdio de Pintura e Giz de Cera
@@ -554,10 +554,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                 </div>
                 <ul className="text-slate-300 text-xs font-medium space-y-3.5 border-t border-slate-800 pt-6">
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-400">✓</span> <strong>150 histórias ilustradas</strong> por mês
+                    <span className="text-amber-400">✓</span> <strong>80 histórias ilustradas</strong> por mês
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-400">✓</span> <strong>35 vídeos animados</strong> por mês
+                    <span className="text-amber-400">✓</span> <strong>12 vídeos animados</strong> por mês
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="text-amber-400">✓</span> Estúdio de Pintura Completo
@@ -592,10 +592,10 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                 </div>
                 <ul className="text-slate-355 text-xs font-medium space-y-3.5 border-t border-slate-800/60 pt-6">
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-500">✓</span> 50 histórias ilustradas por mês
+                    <span className="text-amber-500">✓</span> 30 histórias ilustradas por mês
                   </li>
                   <li className="flex items-center gap-2.5">
-                    <span className="text-amber-500">✓</span> 15 vídeos animados por mês
+                    <span className="text-amber-500">✓</span> 5 vídeos animados por mês
                   </li>
                   <li className="flex items-center gap-2.5">
                     <span className="text-amber-500">✓</span> Narração em áudio profissional
