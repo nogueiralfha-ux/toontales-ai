@@ -59,13 +59,44 @@ export class MockStoryService implements IStoryService {
       
       // Dynamic name injection
       if (customName) {
-        text = text
-          .replace(/Noé/g, customName)
-          .replace(/coelhinha Lili/g, customName)
-          .replace(/coelha Lili/g, customName)
-          .replace(/Lili/g, customName)
-          .replace(/gotinha Pingo/g, customName)
-          .replace(/Pingo/g, customName);
+        const isMale = !customName.endsWith('a') || ['davi', 'lucca', 'lucas', 'pedro', 'joao', 'joão', 'gabriel', 'mateus', 'matheus', 'felipe', 'gustavo', 'henrique', 'bernardo', 'heitor', 'samuel', 'miguel'].includes(customName.toLowerCase());
+        
+        if (isMale) {
+          text = text
+            .replace(/a pequena coelhinha Lili/g, `o pequeno coelhinho ${customName}`)
+            .replace(/A pequena coelhinha Lili/g, `O pequeno coelhinho ${customName}`)
+            .replace(/a coelha Lili/g, `o coelho ${customName}`)
+            .replace(/A coelha Lili/g, `O coelho ${customName}`)
+            .replace(/a destemida coelha Lili/g, `o destemido coelho ${customName}`)
+            .replace(/A destemida coelha Lili/g, `O destemido coelho ${customName}`)
+            .replace(/coelhinha Lili/g, `coelhinho ${customName}`)
+            .replace(/coelha Lili/g, `coelho ${customName}`)
+            .replace(/A pequena Lili/g, `O pequeno ${customName}`)
+            .replace(/a pequena Lili/g, `o pequeno ${customName}`)
+            .replace(/a Lili/g, `o ${customName}`)
+            .replace(/A Lili/g, `O ${customName}`)
+            .replace(/da Lili/g, `do ${customName}`)
+            .replace(/na Lili/g, `no ${customName}`)
+            .replace(/pela Lili/g, `pelo ${customName}`)
+            .replace(/ela/g, 'ele')
+            .replace(/Ela/g, 'Ele')
+            .replace(/delas/g, 'deles')
+            .replace(/dela/g, 'dele')
+            .replace(/destemida/g, 'destemido')
+            .replace(/pequena/g, 'pequeno')
+            .replace(/Lili/g, customName)
+            .replace(/Noé/g, customName)
+            .replace(/gotinha Pingo/g, customName)
+            .replace(/Pingo/g, customName);
+        } else {
+          text = text
+            .replace(/Noé/g, customName)
+            .replace(/coelhinha Lili/g, customName)
+            .replace(/coelha Lili/g, customName)
+            .replace(/Lili/g, customName)
+            .replace(/gotinha Pingo/g, customName)
+            .replace(/Pingo/g, customName);
+        }
       }
       
       // Dynamic parent character injection
