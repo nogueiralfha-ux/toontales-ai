@@ -240,9 +240,14 @@ export default async function handler(req, res) {
       const hasTextKey = (openAiKey && !openAiKey.includes('sua_chave')) || (geminiKey && !geminiKey.includes('sua_chave'));
       const hasImageKey = (replicateKey && !replicateKey.includes('sua_chave')) || (falKey && !falKey.includes('sua_chave')) || (geminiKey && !geminiKey.includes('sua_chave'));
 
+      console.log("[AI Proxy Env Check] GEMINI_API_KEY:", geminiKey ? `${geminiKey.substring(0, 8)}...` : 'missing');
+      console.log("[AI Proxy Env Check] FAL_KEY:", falKey ? `${falKey.substring(0, 8)}...` : 'missing');
+
       if (!hasTextKey || !hasImageKey) {
-        console.log("[AI Proxy] Chaves não configuradas. Executando fallback mockado...");
-        return res.status(200).json({ status: 'fallback_mock' });
+        return res.status(400).json({ 
+          error: "Chaves de API não configuradas corretamente na Vercel", 
+          details: `As variáveis GEMINI_API_KEY ou FAL_KEY não foram encontradas no servidor. Gemini: ${geminiKey ? 'Preenchida' : 'Faltando'}. Fal.ai: ${falKey ? 'Preenchida' : 'Faltando'}. Certifique-se de que fez um Redeploy na Vercel após salvá-las.`
+        });
       }
 
       // System Prompt

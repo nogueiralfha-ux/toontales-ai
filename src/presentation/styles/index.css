@@ -1,54 +1,79 @@
-@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Outfit:wght@100..900&family=Quicksand:wght@300..700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@300..700&family=Outfit:wght@100..900&family=Press+Start+2P&display=swap');
 
 @import "tailwindcss";
 
-/* Additional design adjustments and material protection */
+:root {
+  --primary-glow: conic-gradient(
+    from 180deg at 50% 50%,
+    #16a34a 0deg,
+    #15803d 120deg,
+    #22c55e 240deg,
+    #16a34a 360deg
+  );
+}
+
 body {
-  background-color: #f3f6fa;
-  font-family: 'Outfit', 'Inter', system-ui, sans-serif;
+  background-color: #0c0f12;
+  color: #f3f6fa;
+  font-family: 'Outfit', 'Fredoka', system-ui, sans-serif;
   overflow-x: hidden;
   user-select: none;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
+  min-height: 100vh;
 }
 
-img, svg {
-  user-select: none;
-  -webkit-user-select: none;
-  -webkit-user-drag: none;
-  pointer-events: none;
+/* Glassmorphism Panel styles */
+.glass-panel {
+  background: rgba(26, 32, 44, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
 }
 
-/* Playful animations for children */
-.scale-102:hover {
-  transform: scale(1.02);
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-.animate-pulse-slow {
-  animation: pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+.glass-panel-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(34, 197, 94, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(22, 163, 74, 0.2);
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: .8;
-  }
-}
-@keyframes kenburns {
-  0% {
-    transform: scale(1) translate(0, 0);
-  }
-  50% {
-    transform: scale(1.15) translate(-1.5%, -1%);
-  }
-  100% {
-    transform: scale(1) translate(0, 0);
-  }
+/* Veggie Arena 3D styling */
+.veggie-field-grass {
+  background: linear-gradient(135deg, #15803d 25%, #166534 25%, #166534 50%, #15803d 50%, #15803d 75%, #166534 75%, #166534 100%);
+  background-size: 80px 80px;
 }
 
-.animate-cinematic-video {
-  animation: kenburns 15s ease-in-out infinite;
+/* Stadium Crowds background effect */
+.stadium-crowd-layer {
+  background-image: radial-gradient(circle at 50% 50%, rgba(22, 163, 74, 0.15) 1px, transparent 1px);
+  background-size: 8px 8px;
+  animation: crowdShuffle 8s ease-in-out infinite alternate;
+}
+
+@keyframes crowdShuffle {
+  0% { transform: translateY(0) scale(1); }
+  100% { transform: translateY(-4px) scale(1.02); }
+}
+
+/* Custom Sports Banner Text */
+.sports-banner-text {
+  font-family: 'Press Start 2P', cursive;
+  text-shadow: 0 4px 0px #000, 0 8px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Custom Scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+  background: #334155;
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #22c55e;
 }
