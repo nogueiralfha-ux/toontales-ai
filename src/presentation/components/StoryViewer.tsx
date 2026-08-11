@@ -103,6 +103,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
     
     if (activeTab === 'video' && isVideoPlaying) {
       const currentScene = story.scenes[currentVideoScene];
+      if (!currentScene) {
+        setIsVideoPlaying(false);
+        setCurrentVideoScene(0);
+        return;
+      }
       
       window.speechSynthesis?.cancel();
 
@@ -160,6 +165,11 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
 
     if (activeTab === 'audio' && isAudioPlaying) {
       const currentScene = story.scenes[currentAudioScene];
+      if (!currentScene) {
+        setIsAudioPlaying(false);
+        setCurrentAudioScene(0);
+        return;
+      }
       
       window.speechSynthesis?.cancel();
 
@@ -242,6 +252,9 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
     }
   };
 
+  const videoScene = story.scenes[currentVideoScene] || story.scenes[0] || { text: '', illustrationSvg: '', coloringSvg: '', coloringUrl: '', illustrationUrl: '' };
+  const audioScene = story.scenes[currentAudioScene] || story.scenes[0] || { text: '', audioUrl: '' };
+
   return (
     <div className="flex flex-col gap-6">
       {/* Back navigation header */}
@@ -320,23 +333,23 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
                     Desenhando Ilustração da Página {currentVideoScene + 1}... 🎨
                   </p>
                 </div>
-              ) : story.scenes[currentVideoScene].illustrationUrl ? (
+              ) : videoScene.illustrationUrl ? (
                 <img 
-                  src={story.scenes[currentVideoScene].illustrationUrl} 
+                  src={videoScene.illustrationUrl} 
                   alt={`Cena ${currentVideoScene + 1}`}
                   className={`w-full h-full object-cover pointer-events-none select-none transition-all duration-700 ${isVideoPlaying ? 'animate-cinematic-video' : 'transform hover:scale-101'}`}
                 />
               ) : (
                 <div 
                   className={`w-full h-full pointer-events-none select-none transition-all duration-700 ${isVideoPlaying ? 'animate-cinematic-video' : 'transform hover:scale-101'}`}
-                  dangerouslySetInnerHTML={{ __html: story.scenes[currentVideoScene].illustrationSvg }}
+                  dangerouslySetInnerHTML={{ __html: videoScene.illustrationSvg }}
                 />
               )}
 
               {/* Subtitles Overlay */}
               <div className="absolute bottom-6 left-6 right-6 bg-black/75 backdrop-blur-md p-5 rounded-2xl border border-white/5 text-center transition-all duration-300">
                 <p className="text-lg md:text-xl font-bold leading-relaxed font-serif text-amber-100">
-                  {story.scenes[currentVideoScene].text}
+                  {videoScene.text}
                 </p>
               </div>
 
@@ -441,10 +454,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
 
         {activeTab === 'coloring' && (
           <ColoringCanvas 
-            coloringSvg={story.scenes[currentVideoScene].coloringSvg} 
+            coloringSvg={videoScene.coloringSvg} 
             storyTitle={story.title} 
             pageNumber={currentVideoScene + 1} 
-            coloringUrl={story.scenes[currentVideoScene].coloringUrl}
+            coloringUrl={videoScene.coloringUrl}
           />
         )}
 
@@ -469,7 +482,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
               </span>
               <h3 className="text-xl font-black text-slate-850 font-serif mt-3 leading-snug">{story.title}</h3>
               <p className="text-slate-500 font-bold text-xs mt-3 leading-relaxed bg-slate-50 p-4 rounded-xl border border-slate-100 italic">
-                "{story.scenes[currentAudioScene]?.text}"
+                "{audioScene.text}"
               </p>
             </div>
 
@@ -530,10 +543,10 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
               </button>
             </div>
 
-            {story.scenes[currentAudioScene]?.audioUrl && (
+            {audioScene.audioUrl && (
               <audio
                 ref={audioRef}
-                src={story.scenes[currentAudioScene].audioUrl}
+                src={audioScene.audioUrl}
                 onTimeUpdate={(e) => setAudioTimer((e.target as HTMLAudioElement).currentTime)}
                 onEnded={() => {
                   if (currentAudioScene < story.scenes.length - 1) {
