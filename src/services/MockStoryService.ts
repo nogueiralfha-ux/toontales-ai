@@ -30,10 +30,45 @@ export class MockStoryService implements IStoryService {
 
     // Fallback name extraction if brackets aren't used
     if (!customName && rawTitle && rawTitle !== this.getDefaultTitle(theme)) {
-      const cleanPrompt = rawTitle.replace(/\[[^\]]+\]/g, '').replace(/(historia|história|de|do|da|um|uma|sobre|com|o|a|para|infantil|aventura|desenho|vídeo|livro)\s+/gi, '').trim();
-      if (cleanPrompt) {
-        const firstWord = cleanPrompt.split(/\s+/)[0];
-        customName = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+      // 1. Tenta encontrar qualquer palavra em maiúsculo no prompt (excluindo a primeira palavra de comando)
+      const words = rawTitle.replace(/[^a-zA-ZáàâãéèêíïóôõöúçÑñÁÀÂÃÉÈÍÏÓÔÕÖÚÇ\s]/g, '').trim().split(/\s+/);
+      const capitalizedWords = words.filter((w, idx) => idx > 0 && w && w[0] === w[0].toUpperCase() && w[0] !== w[0].toLowerCase());
+      
+      if (capitalizedWords.length > 0) {
+        customName = capitalizedWords[0];
+      } else {
+        // 2. Senão, busca a palavra imediatamente após conectivos como "para", "sobre", "com", "de", "do", "da"
+        const lowerTitle = rawTitle.toLowerCase();
+        const introWords = ['para a', 'para o', 'para', 'sobre a', 'sobre o', 'sobre', 'com a', 'com o', 'com', 'de', 'do', 'da'];
+        let foundIndex = -1;
+        let matchedIntro = '';
+        
+        for (const intro of introWords) {
+          const idx = lowerTitle.lastIndexOf(' ' + intro + ' ');
+          if (idx !== -1 && idx > foundIndex) {
+            foundIndex = idx;
+            matchedIntro = intro;
+          }
+        }
+        
+        if (foundIndex !== -1) {
+          const afterIntro = rawTitle.substring(foundIndex + matchedIntro.length + 2).trim();
+          if (afterIntro) {
+            const firstWordAfter = afterIntro.split(/\s+/)[0].replace(/[^a-zA-ZáàâãéèêíïóôõöúçÑñÁÀÂÃÉÈÍÏÓÔÕÖÚÇ]/g, '');
+            if (firstWordAfter) {
+              customName = firstWordAfter.charAt(0).toUpperCase() + firstWordAfter.slice(1).toLowerCase();
+            }
+          }
+        }
+      }
+      
+      // 3. Fallback absoluto: usa a primeira palavra limpa
+      if (!customName) {
+        const cleanPrompt = rawTitle.replace(/\[[^\]]+\]/g, '').replace(/\b(historia|história|de|do|da|um|uma|sobre|com|o|a|para|infantil|aventura|desenho|vídeo|livro)\b\s*/gi, '').trim();
+        if (cleanPrompt) {
+          const firstWord = cleanPrompt.split(/\s+/)[0];
+          customName = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+        }
       }
     }
 
