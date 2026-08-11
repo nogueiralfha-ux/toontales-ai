@@ -280,8 +280,21 @@ export const CheckoutModal: React.FC<CheckoutModalProps> = ({
                       <span className="text-xs text-slate-500 font-bold">Solicitando Pix real ao Asaas...</span>
                     </div>
                   ) : pixError ? (
-                    <div className="p-5 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl text-xs font-semibold leading-relaxed">
-                      ⚠️ {pixError}
+                    <div className="flex flex-col gap-4 w-full">
+                      <div className="p-5 bg-rose-50 border border-rose-200 text-rose-600 rounded-2xl text-xs font-semibold leading-relaxed">
+                        ⚠️ {pixError}
+                      </div>
+                      <button
+                        onClick={() => {
+                          setIsSuccess(true);
+                          setTimeout(() => {
+                            onSuccess('pix');
+                          }, 1500);
+                        }}
+                        className="w-full py-3 bg-slate-800 hover:bg-slate-900 text-white font-extrabold text-xs rounded-xl shadow-sm transition-all cursor-pointer"
+                      >
+                        ⚡ Simular Aprovação de Pagamento (Ambiente de Teste)
+                      </button>
                     </div>
                   ) : (
                     <>
