@@ -297,9 +297,9 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
                       onChange={(e) => setSelectedAge(e.target.value)}
                       className="w-full px-3 py-3 bg-slate-950 border border-slate-700 rounded-xl focus:border-amber-500 focus:outline-none text-slate-250 text-xs font-bold"
                     >
-                      <option value="2-6">👶 5 a 7 anos (8 Cenas • Descobertas)</option>
+                      <option value="2-6">👶 3 a 6 anos (8 Cenas)</option>
                       <option value="7-12">👦 7 a 12 anos (12 Cenas)</option>
-                      <option value="adulto">👨 14+ anos / Adultos (16 Cenas • Homenagens)</option>
+                      <option value="adulto">👨 Adulto / Homenagem (16 Cenas)</option>
                     </select>
                   </div>
                 </div>

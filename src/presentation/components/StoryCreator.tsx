@@ -256,7 +256,7 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
                     : 'bg-slate-950/40 border-slate-800 text-slate-400 hover:bg-slate-900/60'
                 }`}
               >
-                2-6 anos <span className="block text-[10px] font-normal opacity-90">(8 Cenas)</span>
+                3-6 anos <span className="block text-[10px] font-normal opacity-90">(8 Cenas)</span>
               </button>
               <button
                 type="button"
