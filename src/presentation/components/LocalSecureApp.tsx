@@ -727,6 +727,22 @@ export const LocalSecureApp: React.FC = () => {
           onSelectPlan={handleSelectPlan}
           onBuySingleStory={handleBuySingleStory}
         />
+
+        {/* Render Checkout Modal na Landing Page */}
+        {showCheckout && pendingPlan && (
+          <CheckoutModal
+            planType={pendingPlan.planType}
+            billingCycle={pendingPlan.billingCycle}
+            price={pendingPlan.price}
+            userEmail={session?.email || 'cliente@toontales.com'}
+            isAdultHomenagem={pendingPlan.planType === 'single_story' && localStorage.getItem('toontales_pending_age') === 'adulto'}
+            onClose={() => {
+              setShowCheckout(false);
+              setPendingPlan(null);
+            }}
+            onSuccess={handleCheckoutSuccess}
+          />
+        )}
       </div>
     );
   }
