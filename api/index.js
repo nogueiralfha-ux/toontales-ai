@@ -280,10 +280,22 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
       const useGemini = modelId ? modelId.startsWith('gemini') : (geminiKey && !geminiKey.includes('sua_chave'));
       
       if (useGemini) {
-        const geminiModel = 'gemini-3.5-flash';
+        let geminiModel = 'gemini-3.5-flash';
         console.log(`[AI Proxy TACE] Gerando texto com Google Gemini (${geminiModel})...`);
         try {
-          const geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
+          let geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
+          
+          // Verifica se o erro é de sobrecarga/alta demanda
+          if (geminiResponse.error && (
+            geminiResponse.error.message.includes('high demand') || 
+            geminiResponse.error.message.includes('overloaded') || 
+            geminiResponse.error.message.includes('exhausted')
+          )) {
+            console.warn(`[AI Proxy TACE] Gemini 3.5 Flash sobrecarregado (Alta Demanda). Tentando fallback automático com Gemini 3.1 Flash Lite...`);
+            geminiModel = 'gemini-3.1-flash-lite';
+            geminiResponse = await generateTextWithGemini(geminiModel, geminiKey, promptSystem, userInstruction);
+          }
+
           if (geminiResponse.candidates && geminiResponse.candidates[0] && geminiResponse.candidates[0].content && geminiResponse.candidates[0].content.parts[0]) {
             rawContent = geminiResponse.candidates[0].content.parts[0].text;
           } else if (geminiResponse.error) {
@@ -292,22 +304,33 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             throw new Error("Gemini não retornou candidates válidos: " + JSON.stringify(geminiResponse));
           }
         } catch (err) {
-          console.warn("Google Gemini falhou. Tentando OpenAI como fallback...", err);
-          if (openAiKey && !openAiKey.includes('sua_chave')) {
-            try {
-              const openAiResponse = await generateTextWithOpenAI('gpt-4o-mini', openAiKey, promptSystem, userInstruction);
-              if (openAiResponse.choices && openAiResponse.choices[0]) {
-                rawContent = openAiResponse.choices[0].message.content;
-                usedFallback = true;
-              } else {
-                throw new Error("Resposta da OpenAI vazia ou inválida.");
-              }
-            } catch (openaiErr) {
-              console.error("OpenAI fallback também falhou:", openaiErr);
-              throw new Error(`Ambos os serviços de IA (Gemini e OpenAI) falharam. Detalhe Gemini: ${err.message || JSON.stringify(err)} | Detalhe OpenAI: ${openaiErr.message || JSON.stringify(openaiErr)}`);
+          // Se falhou na conexão ou na primeira chamada, faz uma última tentativa local com o Flash Lite
+          try {
+            console.warn(`[AI Proxy TACE] Conexão falhou no Gemini 3.5 Flash. Tentando contingência de segurança com Gemini 3.1 Flash Lite...`);
+            const fallbackResponse = await generateTextWithGemini('gemini-3.1-flash-lite', geminiKey, promptSystem, userInstruction);
+            if (fallbackResponse.candidates && fallbackResponse.candidates[0] && fallbackResponse.candidates[0].content && fallbackResponse.candidates[0].content.parts[0]) {
+              rawContent = fallbackResponse.candidates[0].content.parts[0].text;
+            } else {
+              throw new Error("Contingência também falhou.");
             }
-          } else {
-            throw new Error(`Google Gemini falhou: ${err.message || JSON.stringify(err)}. OpenAI não está configurada.`);
+          } catch (fallbackErr) {
+            console.warn("Google Gemini 3.1 Flash Lite também falhou. Tentando OpenAI como fallback...", fallbackErr);
+            if (openAiKey && !openAiKey.includes('sua_chave')) {
+              try {
+                const openAiResponse = await generateTextWithOpenAI('gpt-4o-mini', openAiKey, promptSystem, userInstruction);
+                if (openAiResponse.choices && openAiResponse.choices[0]) {
+                  rawContent = openAiResponse.choices[0].message.content;
+                  usedFallback = true;
+                } else {
+                  throw new Error("Resposta da OpenAI vazia ou inválida.");
+                }
+              } catch (openaiErr) {
+                console.error("OpenAI fallback também falhou:", openaiErr);
+                throw new Error(`Ambos os serviços de IA (Gemini e OpenAI) falharam. Detalhe Gemini: ${err.message || JSON.stringify(err)} | Detalhe OpenAI: ${openaiErr.message || JSON.stringify(openaiErr)}`);
+              }
+            } else {
+              throw new Error(`Google Gemini falhou (sobrecarga/conexão): ${err.message || JSON.stringify(err)}. OpenAI não está configurada.`);
+            }
           }
         }
       } else {
