@@ -701,8 +701,8 @@ export const LocalSecureApp: React.FC = () => {
               T
             </div>
             <div>
-              <span className="text-xl font-extrabold tracking-tight text-slate-800 font-serif">ToonTales</span>
-              <span className="text-xs font-bold text-amber-500 block -mt-1 uppercase tracking-widest text-[9px]">AI Studio</span>
+              <span className="text-xl font-extrabold tracking-tight text-slate-800 font-serif">ToonTales <span className="text-amber-500 font-black">Kids</span></span>
+              <span className="text-xs font-bold text-slate-400 block -mt-1 uppercase tracking-widest text-[9px]">AI Studio</span>
             </div>
           </div>
           <div className="flex items-center gap-3">
@@ -767,7 +767,7 @@ export const LocalSecureApp: React.FC = () => {
               A
             </div>
             <div>
-              <span className="text-xl font-extrabold tracking-tight font-serif text-white">ToonTales Admin</span>
+              <span className="text-xl font-extrabold tracking-tight font-serif text-white">ToonTales Kids Admin</span>
               <span className="text-xs font-bold text-amber-400 block -mt-1 uppercase tracking-widest text-[8px]">Painel de Controle</span>
             </div>
           </div>
@@ -809,8 +809,8 @@ export const LocalSecureApp: React.FC = () => {
               T
             </div>
             <div>
-              <span className="text-xl font-extrabold tracking-tight text-white font-serif">ToonTales</span>
-              <span className="text-xs font-bold text-amber-400 block -mt-1 uppercase tracking-widest text-[9px]">
+              <span className="text-xl font-extrabold tracking-tight text-white font-serif">ToonTales <span className="text-amber-500 font-black">Kids</span></span>
+              <span className="text-xs font-bold text-slate-400 block -mt-1 uppercase tracking-widest text-[9px]">
                 {subscription.planType === 'free' ? 'AI Studio' : `${subscription.planType} Tier`}
               </span>
             </div>
