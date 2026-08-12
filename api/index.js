@@ -501,17 +501,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
            }
         }
       } catch (errImg) {
-          console.error(`Fal.ai falhou, tentando Google Imagen 4.0 como contingência...`, errImg);
+          console.error(`Fal.ai falhou, tentando Google Gemini 2.5 Flash Image como contingência...`, errImg);
           try {
             if (geminiKey && !geminiKey.includes('sua_chave')) {
-              console.log(`[AI Proxy Contingência] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
+              console.log(`[AI Proxy Contingência] Gerando imagem para cena ${scene.pageNumber} via Gemini 2.5 Flash Image...`);
               const promptValue = `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
               
-              const imagenResponse = await new Promise((resolve, reject) => {
+              const geminiImageResponse = await new Promise((resolve, reject) => {
                 const reqPost = https.request({
                   method: 'POST',
                   hostname: 'generativelanguage.googleapis.com',
-                  path: `/v1beta/models/imagen-4.0-generate-001:predict?key=${geminiKey}`,
+                  path: `/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
                   headers: { 'Content-Type': 'application/json' }
                 }, (resPost) => {
                   let resData = '';
@@ -526,37 +526,33 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
                 });
                 reqPost.on('error', reject);
                 reqPost.write(JSON.stringify({
-                  instances: [
-                    {
-                      prompt: promptValue
-                    }
-                  ],
-                  parameters: {
-                    sampleCount: 1,
-                    aspectRatio: "16:9",
-                    outputMimeType: "image/jpeg"
-                  }
+                  contents: [{ parts: [{ text: promptValue }] }]
                 }));
                 reqPost.end();
               });
 
-              if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-                const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+              if (geminiImageResponse.candidates && geminiImageResponse.candidates[0].content.parts[0].inlineData) {
+                const base64Data = geminiImageResponse.candidates[0].content.parts[0].inlineData.data;
+                const base64Img = `data:image/jpeg;base64,${base64Data}`;
                 if (falKey && !falKey.includes('sua_chave')) {
                   try {
                     imageUrl = await uploadBase64ToFal(base64Img, falKey);
                   } catch (errUpload) {
-                    console.error("Falha ao subir imagem Imagen 3 (fallback) para Fal:", errUpload);
+                    console.error("Falha ao subir imagem Gemini 2.5 Image para Fal:", errUpload);
                     imageUrl = base64Img;
                   }
                 } else {
                   imageUrl = base64Img;
                 }
-                console.log(`[AI Proxy Contingência] Imagem gerada com sucesso via Google Imagen 3 para cena ${scene.pageNumber}!`);
+                console.log(`[AI Proxy Contingência] Imagem gerada com sucesso via Gemini 2.5 Image para cena ${scene.pageNumber}!`);
+              } else if (geminiImageResponse.error) {
+                throw new Error(geminiImageResponse.error.message || "Erro desconhecido do Gemini Image");
+              } else {
+                throw new Error("Gemini Image não retornou candidatos válidos.");
               }
             }
           } catch (imagenErr) {
-            console.error("Contingência do Google Imagen 3 também falhou:", imagenErr);
+            console.error("Contingência do Google Gemini Image também falhou:", imagenErr);
           }
         }
 
@@ -730,15 +726,16 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         }
       } catch (errImg) {
         console.error(`Erro ao gerar imagem na contingência de cena:`, errImg);
-        // Tenta Imagen 3 se Fal.ai falhou
+        // Tenta Gemini 2.5 Image se Fal.ai falhou
         try {
           if (geminiKey && !geminiKey.includes('sua_chave')) {
+            console.log(`[AI Proxy Scene Contingência] Gerando imagem via Gemini 2.5 Image...`);
             const promptValue = `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
-            const imagenResponse = await new Promise((resolve, reject) => {
+            const geminiImageResponse = await new Promise((resolve, reject) => {
               const reqPost = https.request({
                 method: 'POST',
                 hostname: 'generativelanguage.googleapis.com',
-                path: `/v1beta/models/imagen-4.0-generate-001:predict?key=${geminiKey}`,
+                path: `/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
                 headers: { 'Content-Type': 'application/json' }
               }, (resPost) => {
                 let resData = '';
@@ -749,24 +746,26 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               });
               reqPost.on('error', reject);
               reqPost.write(JSON.stringify({
-                instances: [{ prompt: promptValue }],
-                parameters: { sampleCount: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" }
+                contents: [{ parts: [{ text: promptValue }] }]
               }));
               reqPost.end();
             });
 
-            if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-              const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            if (geminiImageResponse.candidates && geminiImageResponse.candidates[0].content.parts[0].inlineData) {
+              const base64Data = geminiImageResponse.candidates[0].content.parts[0].inlineData.data;
+              const base64Img = `data:image/jpeg;base64,${base64Data}`;
               if (falKey && !falKey.includes('sua_chave')) {
                 try {
                   imageUrl = await uploadBase64ToFal(base64Img, falKey);
                 } catch (errUpload) {
-                  console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                  console.error("Falha ao subir imagem Gemini 2.5 Image para Fal:", errUpload);
                   imageUrl = base64Img;
                 }
               } else {
                 imageUrl = base64Img;
               }
+            } else if (geminiImageResponse.error) {
+              throw new Error(geminiImageResponse.error.message || "Erro do Gemini Image");
             }
           }
         } catch (errFallback) {
