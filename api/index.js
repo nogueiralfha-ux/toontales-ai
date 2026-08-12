@@ -492,13 +492,16 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               reqPost.end();
             });
 
-            if (falResponse.images && falResponse.images[0]) {
-              imageUrl = falResponse.images[0].url;
-            }
-          }
+             if (falResponse.images && falResponse.images[0]) {
+               imageUrl = falResponse.images[0].url;
+             } else {
+               const errMsg = falResponse.detail || falResponse.message || JSON.stringify(falResponse);
+               throw new Error(`Erro na API Fal.ai: ${errMsg}`);
+             }
+           }
         }
       } catch (errImg) {
-          console.error(`Fal.ai falhou, tentando Google Imagen 3 como contingência...`, errImg);
+          console.error(`Fal.ai falhou, tentando Google Imagen 4.0 como contingência...`, errImg);
           try {
             if (geminiKey && !geminiKey.includes('sua_chave')) {
               console.log(`[AI Proxy Contingência] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
@@ -508,7 +511,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
                 const reqPost = https.request({
                   method: 'POST',
                   hostname: 'generativelanguage.googleapis.com',
-                  path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                  path: `/v1beta/models/imagen-4.0-generate-001:predict?key=${geminiKey}`,
                   headers: { 'Content-Type': 'application/json' }
                 }, (resPost) => {
                   let resData = '';
@@ -720,6 +723,9 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
 
           if (falResponse.images && falResponse.images[0]) {
             imageUrl = falResponse.images[0].url;
+          } else {
+            const errMsg = falResponse.detail || falResponse.message || JSON.stringify(falResponse);
+            throw new Error(`Erro na API Fal.ai: ${errMsg}`);
           }
         }
       } catch (errImg) {
@@ -732,7 +738,7 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               const reqPost = https.request({
                 method: 'POST',
                 hostname: 'generativelanguage.googleapis.com',
-                path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                path: `/v1beta/models/imagen-4.0-generate-001:predict?key=${geminiKey}`,
                 headers: { 'Content-Type': 'application/json' }
               }, (resPost) => {
                 let resData = '';
