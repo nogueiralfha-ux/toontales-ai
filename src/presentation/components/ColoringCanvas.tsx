@@ -32,10 +32,115 @@ type ToolType = 'brush' | 'crayon' | 'spray' | 'eraser';
 
 const BRUSH_SIZES = [4, 8, 16, 24];
 
+// BUGFIX ("para pintar" mostrando a foto/ilustração colorida em vez de um
+// contorno): o backend ainda não gera uma imagem de linhas dedicada — ele
+// reaproveita a mesma ilustração colorida como coloringUrl. Como o overlay
+// usa mixBlendMode: 'multiply' (técnica de "papel de decalque": branco fica
+// transparente, preto fica opaco), a imagem colorida "vaza" por cima da
+// pintura da criança. Esta função converte a ilustração em um contorno P&B
+// (escala de cinza + detecção de bordas Sobel) inteiramente no navegador,
+// sem custo extra de API. Recomendação de melhoria futura: gerar esse
+// line-art no backend com um prompt dedicado ("black and white line art,
+// coloring book page, bold outlines, no shading") — ver SKILL.md.
+async function generateLineArtFromImage(imageUrl: string): Promise<string | null> {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    img.onload = () => {
+      try {
+        const MAX_DIM = 900;
+        const scale = Math.min(1, MAX_DIM / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale));
+        const h = Math.max(1, Math.round(img.height * scale));
+
+        const src = document.createElement('canvas');
+        src.width = w;
+        src.height = h;
+        const sctx = src.getContext('2d');
+        if (!sctx) return resolve(null);
+        sctx.drawImage(img, 0, 0, w, h);
+
+        const { data } = sctx.getImageData(0, 0, w, h);
+
+        // 1) Escala de cinza
+        const gray = new Float32Array(w * h);
+        for (let i = 0; i < w * h; i++) {
+          const r = data[i * 4], g = data[i * 4 + 1], b = data[i * 4 + 2];
+          gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
+        }
+
+        // 2) Sobel: magnitude do gradiente por pixel
+        const out = sctx.createImageData(w, h);
+        const gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+        const gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+        const THRESHOLD = 60;
+
+        for (let y = 0; y < h; y++) {
+          for (let x = 0; x < w; x++) {
+            let sx = 0, sy = 0;
+            if (x > 0 && x < w - 1 && y > 0 && y < h - 1) {
+              let k = 0;
+              for (let dy = -1; dy <= 1; dy++) {
+                for (let dx = -1; dx <= 1; dx++) {
+                  const v = gray[(y + dy) * w + (x + dx)];
+                  sx += v * gx[k];
+                  sy += v * gy[k];
+                  k++;
+                }
+              }
+            }
+            const mag = Math.sqrt(sx * sx + sy * sy);
+            const isEdge = mag > THRESHOLD;
+            const idx = (y * w + x) * 4;
+            const val = isEdge ? 0 : 255; // linha preta sobre fundo branco
+            out.data[idx] = val;
+            out.data[idx + 1] = val;
+            out.data[idx + 2] = val;
+            out.data[idx + 3] = 255;
+          }
+        }
+
+        sctx.putImageData(out, 0, 0);
+        resolve(src.toDataURL('image/png'));
+      } catch (e) {
+        // Canvas "contaminado" por falta de CORS na origem da imagem, ou outro erro:
+        // volta para a imagem original em vez de quebrar a tela.
+        console.warn('[ColoringCanvas] Não foi possível gerar o contorno (line-art):', e);
+        resolve(null);
+      }
+    };
+
+    img.onerror = () => resolve(null);
+    img.src = imageUrl;
+  });
+}
+
 export const ColoringCanvas: React.FC<ColoringCanvasProps> = ({ coloringSvg, storyTitle, pageNumber, coloringUrl }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  
+
+  // Contorno P&B gerado a partir de coloringUrl (ver generateLineArtFromImage acima).
+  // Enquanto processa, ou se falhar, cai de volta para coloringUrl original.
+  const [lineArtUrl, setLineArtUrl] = useState<string | null>(null);
+  const [isProcessingLineArt, setIsProcessingLineArt] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLineArtUrl(null);
+    if (!coloringUrl) return;
+
+    setIsProcessingLineArt(true);
+    generateLineArtFromImage(coloringUrl).then((result) => {
+      if (!cancelled) {
+        setLineArtUrl(result);
+        setIsProcessingLineArt(false);
+      }
+    });
+
+    return () => { cancelled = true; };
+  }, [coloringUrl]);
+
   const [activePalette, setActivePalette] = useState<PaletteType>('floresta');
   const [selectedColor, setSelectedColor] = useState(PALETTES.floresta.colors[0]);
   const [brushSize, setBrushSize] = useState(BRUSH_SIZES[1]);
@@ -282,8 +387,8 @@ export const ColoringCanvas: React.FC<ColoringCanvasProps> = ({ coloringSvg, sto
       if (!coloringUrl) URL.revokeObjectURL(img.src);
     };
 
-    if (coloringUrl) {
-      img.src = coloringUrl;
+    if (lineArtUrl || coloringUrl) {
+      img.src = lineArtUrl || coloringUrl!;
     } else {
       const svgBlob = new Blob([coloringSvg], { type: 'image/svg+xml;charset=utf-8' });
       img.src = URL.createObjectURL(svgBlob);
@@ -491,9 +596,13 @@ export const ColoringCanvas: React.FC<ColoringCanvasProps> = ({ coloringSvg, sto
           />
 
           {/* Outline Overlay (Mix Blend Multiply so black lines stay on top) */}
-          {coloringUrl ? (
+          {isProcessingLineArt ? (
+            <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-500 rounded-full animate-spin" />
+            </div>
+          ) : (lineArtUrl || coloringUrl) ? (
             <img 
-              src={coloringUrl} 
+              src={lineArtUrl || coloringUrl} 
               alt="Contorno"
               className="absolute top-0 left-0 w-full h-full pointer-events-none select-none"
               style={{ mixBlendMode: 'multiply' }}

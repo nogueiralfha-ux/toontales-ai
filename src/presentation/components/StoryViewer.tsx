@@ -25,10 +25,16 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
   const [currentAudioScene, setCurrentAudioScene] = useState(0);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [generatingPages, setGeneratingPages] = useState<Record<number, boolean>>({});
+  // BUGFIX: rastreia a página exibida dentro do StoryFlipbook (modo Livro),
+  // que antes tinha estado próprio e nunca disparava o carregamento lazy.
+  const [currentBookScene, setCurrentBookScene] = useState(0);
 
   // Lazy load images for subsequent pages dynamically
   useEffect(() => {
-    const pageIndex = activeTab === 'audio' ? currentAudioScene : currentVideoScene;
+    const pageIndex =
+      activeTab === 'audio' ? currentAudioScene :
+      activeTab === 'book' ? currentBookScene :
+      currentVideoScene; // cobre 'video' e 'coloring', que compartilham o mesmo índice
     const scene = story.scenes[pageIndex];
     if (!scene || scene.illustrationUrl || generatingPages[pageIndex] || !onUpdateStory) return;
 
@@ -57,7 +63,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
           if (data.imageUrl) {
             const updatedScenes = story.scenes.map((s, idx) => 
               idx === pageIndex 
-                ? { ...s, illustrationUrl: data.imageUrl, coloringUrl: data.imageUrl } 
+                ? { ...s, illustrationUrl: data.imageUrl, coloringUrl: data.imageUrl, imageGenerationFailed: !!data.imageGenerationFailed } 
                 : s
             );
             const updatedStory = { ...story, scenes: updatedScenes };
@@ -72,7 +78,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
     };
 
     loadLazyImage();
-  }, [activeTab, currentVideoScene, currentAudioScene, story, generatingPages, onUpdateStory]);
+  }, [activeTab, currentVideoScene, currentAudioScene, currentBookScene, story, generatingPages, onUpdateStory]);
 
   // Initialize random height multipliers for audio wave
   useEffect(() => {
@@ -449,6 +455,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
             moralLesson={story.moralLesson} 
             bibleReference={story.bibleReference} 
             generatingPages={generatingPages}
+            onPageChange={setCurrentBookScene}
           />
         )}
 

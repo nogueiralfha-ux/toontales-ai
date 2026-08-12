@@ -7,12 +7,20 @@ interface StoryFlipbookProps {
   moralLesson?: string;
   bibleReference?: string;
   generatingPages?: Record<number, boolean>;
+  onPageChange?: (pageIndex: number) => void;
 }
 
-export const StoryFlipbook: React.FC<StoryFlipbookProps> = ({ scenes, storyTitle, moralLesson, bibleReference, generatingPages = {} }) => {
+export const StoryFlipbook: React.FC<StoryFlipbookProps> = ({ scenes, storyTitle, moralLesson, bibleReference, generatingPages = {}, onPageChange }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [isPlayingNarration, setIsPlayingNarration] = useState(false);
   const currentScene = scenes[currentPageIndex];
+
+  // BUGFIX: avisa o componente pai (StoryViewer) qual página está visível.
+  // Sem isso, o carregamento lazy de imagens nunca é disparado ao virar
+  // páginas no modo Livro, deixando cenas em branco permanentemente.
+  useEffect(() => {
+    onPageChange?.(currentPageIndex);
+  }, [currentPageIndex, onPageChange]);
 
   // Stop speech synthesis if page changes or component unmounts
   useEffect(() => {

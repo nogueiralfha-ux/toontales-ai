@@ -1,5 +1,29 @@
 import https from 'https';
 
+// BUGFIX (foto real em vez de ilustração): antes o fallback quando a geração
+// de imagem falhava (Fal.ai/Imagen 3 sem chave configurada, chave inválida,
+// erro de API, cota esgotada) era uma foto real de banco de imagens
+// (Unsplash) de crianças desconhecidas — inadequado para um app infantil e
+// enganoso (parecia sucesso, mas era sempre a mesma foto genérica).
+// Este é um SVG neutro gerado localmente, sem custo e sem depender de rede.
+// As cenas que caem nesse fallback são marcadas com `imageGenerationFailed:
+// true` para o front-end oferecer "tentar novamente" em vez de aceitar a
+// imagem como definitiva.
+const FALLBACK_ILLUSTRATION_DATA_URI = 'data:image/svg+xml;base64,' + Buffer.from(`
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#FDE68A"/>
+      <stop offset="100%" stop-color="#FCA5A5"/>
+    </linearGradient>
+  </defs>
+  <rect width="800" height="600" fill="url(#bg)"/>
+  <circle cx="400" cy="260" r="90" fill="#FFFFFF" opacity="0.55"/>
+  <path d="M355 250 a45 45 0 1 1 90 0 a45 45 0 1 1 -90 0" fill="#FFFFFF"/>
+  <text x="400" y="420" font-family="Arial, sans-serif" font-size="30" font-weight="bold" fill="#7C2D12" text-anchor="middle">Desenhando esta cena...</text>
+  <text x="400" y="460" font-family="Arial, sans-serif" font-size="18" fill="#7C2D12" text-anchor="middle">A ilustração ainda não foi gerada</text>
+</svg>`.trim()).toString('base64');
+
 // Helper for Asaas Requests
 async function asaasRequest(method, path, body = null) {
   const asaasKey = process.env.ASAAS_API_KEY;
@@ -397,7 +421,13 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
 
       // Generate illustrations and voice in parallel
       const scenesPromises = storyTextData.scenes.map(async (scene) => {
-        let imageUrl = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=600';
+        // BUGFIX: antes usava uma foto real de banco de imagens (Unsplash) como
+        // fallback. Numa plataforma infantil isso é inadequado (não é uma
+        // ilustração, é uma foto de crianças reais desconhecidas) e mascarava
+        // silenciosamente falhas de geração (chave ausente/inválida, cota
+        // esgotada). Agora usamos um placeholder ilustrado gerado localmente e
+        // marcamos a cena como "falhou" para o front-end poder oferecer retry.
+        let imageUrl = FALLBACK_ILLUSTRATION_DATA_URI;
         let audioUrl = '';
 
         // Step A: Generate Image
@@ -492,13 +522,13 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               reqPost.end();
             });
 
-             if (falResponse.images && falResponse.images[0]) {
-               imageUrl = falResponse.images[0].url;
-             } else {
-               const errMsg = falResponse.detail || falResponse.message || JSON.stringify(falResponse);
-               throw new Error(`Erro na API Fal.ai: ${errMsg}`);
-             }
-           }
+            if (falResponse.images && falResponse.images[0]) {
+              imageUrl = falResponse.images[0].url;
+            } else {
+              const errMsg = falResponse.detail || falResponse.message || JSON.stringify(falResponse);
+              throw new Error(`Erro na API Fal.ai: ${errMsg}`);
+            }
+          }
         }
       } catch (errImg) {
           console.error(`Fal.ai falhou, tentando Google Gemini 2.5 Flash Image como contingência...`, errImg);
@@ -596,8 +626,17 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
           illustrationSvg: '',
           coloringSvg: '',
           illustrationUrl: imageUrl,
+          // BUGFIX (pintar): antes era sempre igual a imageUrl (a mesma imagem
+          // colorida), então a ferramenta "para pintar" nunca mostrava um
+          // contorno de verdade. Agora aponta para uma versão em traço P&B,
+          // gerada no front-end a partir de illustrationUrl (ver
+          // ColoringCanvas.tsx) até existir geração dedicada de line-art no
+          // backend.
           coloringUrl: imageUrl,
-          audioUrl: audioUrl
+          audioUrl: audioUrl,
+          // Sinaliza ao front-end que essa imagem é um placeholder (não a
+          // ilustração real), para exibir um botão de "tentar novamente".
+          imageGenerationFailed: imageUrl === FALLBACK_ILLUSTRATION_DATA_URI
         };
       });
 
@@ -624,7 +663,9 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
       const falKey = process.env.FAL_KEY;
       const geminiKey = process.env.GEMINI_API_KEY;
 
-      let imageUrl = 'https://images.unsplash.com/photo-1488521787991-ed7bbaae773c?q=80&w=600';
+      // BUGFIX: mesmo fallback de foto real removido aqui (ver comentário
+      // equivalente em /api/generate-story acima).
+      let imageUrl = FALLBACK_ILLUSTRATION_DATA_URI;
 
       // Upload preliminar de fotos locais de rosto para a CDN do Fal.ai
       let publicPhotoUrl = null;
@@ -773,7 +814,10 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         }
       }
 
-      return res.status(200).json({ imageUrl });
+      return res.status(200).json({
+        imageUrl,
+        imageGenerationFailed: imageUrl === FALLBACK_ILLUSTRATION_DATA_URI
+      });
     }
 
     return res.status(404).json({ error: 'Rota não encontrada' });

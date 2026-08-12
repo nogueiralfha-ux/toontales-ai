@@ -9,6 +9,7 @@ export interface StoryScene {
   illustrationUrl?: string; // URL da imagem colorida real gerada por IA
   coloringUrl?: string;     // URL da imagem de colorir (outline) real gerada por IA
   audioUrl?: string;        // URL do arquivo de áudio narrado real
+  imageGenerationFailed?: boolean; // true = illustrationUrl é um placeholder, não a ilustração real
 }
 
 export interface Story {
