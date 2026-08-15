@@ -438,14 +438,14 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
           
           if (useImagen && geminiKey && !geminiKey.includes('sua_chave')) {
-            console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Google Imagen 3...`);
+            console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Gemini 2.5 Flash Image...`);
             const promptValue = `${scene.illustrationPrompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
             
-            const imagenResponse = await new Promise((resolve, reject) => {
+            const geminiImageResponse = await new Promise((resolve, reject) => {
               const reqPost = https.request({
                 method: 'POST',
                 hostname: 'generativelanguage.googleapis.com',
-                path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+                path: `/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
                 headers: { 'Content-Type': 'application/json' }
               }, (resPost) => {
                 let resData = '';
@@ -460,36 +460,28 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
               });
               reqPost.on('error', reject);
               reqPost.write(JSON.stringify({
-                instances: [
-                  {
-                    prompt: promptValue
-                  }
-                ],
-                parameters: {
-                  sampleCount: 1,
-                  aspectRatio: "16:9",
-                  outputMimeType: "image/jpeg"
-                }
+                contents: [{ parts: [{ text: promptValue }] }]
               }));
               reqPost.end();
             });
 
-            if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-              const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+            if (geminiImageResponse.candidates && geminiImageResponse.candidates[0].content.parts[0].inlineData) {
+              const base64Data = geminiImageResponse.candidates[0].content.parts[0].inlineData.data;
+              const base64Img = `data:image/jpeg;base64,${base64Data}`;
               if (falKey && !falKey.includes('sua_chave')) {
                 try {
                   imageUrl = await uploadBase64ToFal(base64Img, falKey);
                 } catch (errUpload) {
-                  console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                  console.error("Falha ao subir imagem Gemini 2.5 Image para Fal:", errUpload);
                   imageUrl = base64Img;
                 }
               } else {
                 imageUrl = base64Img;
               }
-            } else if (imagenResponse.error) {
-              throw new Error(imagenResponse.error.message || "Erro desconhecido do Google Imagen 3");
+            } else if (geminiImageResponse.error) {
+              throw new Error(geminiImageResponse.error.message || "Erro desconhecido do Gemini Image");
             } else {
-              throw new Error("Imagen 3 não retornou dados de imagem in predictions.");
+              throw new Error("Gemini Image não retornou dados de imagem válidos.");
             }
           } else if (falKey && !falKey.includes('sua_chave')) {
             console.log(`[AI Proxy] Gerando imagem para cena ${scene.pageNumber} via Fal.ai...`);
@@ -688,14 +680,14 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
         const useImagen = imageModelId === 'imagen-3' || (!falKey && geminiKey);
         
         if (useImagen && geminiKey && !geminiKey.includes('sua_chave')) {
-          console.log(`[AI Proxy Scene] Gerando imagem via Google Imagen 3...`);
+          console.log(`[AI Proxy Scene] Gerando imagem via Gemini 2.5 Flash Image...`);
           const promptValue = `${prompt}, children's book style illustration, soft colors, vibrant 3D cartoon style, highly detailed`;
           
-          const imagenResponse = await new Promise((resolve, reject) => {
+          const geminiImageResponse = await new Promise((resolve, reject) => {
             const reqPost = https.request({
               method: 'POST',
               hostname: 'generativelanguage.googleapis.com',
-              path: `/v1beta/models/imagen-3.0-generate-002:predict?key=${geminiKey}`,
+              path: `/v1beta/models/gemini-2.5-flash-image:generateContent?key=${geminiKey}`,
               headers: { 'Content-Type': 'application/json' }
             }, (resPost) => {
               let resData = '';
@@ -706,26 +698,26 @@ Lembre-se: os personagens devem ser educativos e sem qualquer termo relacionado 
             });
             reqPost.on('error', reject);
             reqPost.write(JSON.stringify({
-              instances: [{ prompt: promptValue }],
-              parameters: { sampleCount: 1, aspectRatio: "16:9", outputMimeType: "image/jpeg" }
+              contents: [{ parts: [{ text: promptValue }] }]
             }));
             reqPost.end();
           });
 
-          if (imagenResponse.predictions && imagenResponse.predictions[0]) {
-            const base64Img = `data:image/jpeg;base64,${imagenResponse.predictions[0].bytesBase64Encoded}`;
+          if (geminiImageResponse.candidates && geminiImageResponse.candidates[0].content.parts[0].inlineData) {
+            const base64Data = geminiImageResponse.candidates[0].content.parts[0].inlineData.data;
+            const base64Img = `data:image/jpeg;base64,${base64Data}`;
             if (falKey && !falKey.includes('sua_chave')) {
               try {
                 imageUrl = await uploadBase64ToFal(base64Img, falKey);
               } catch (errUpload) {
-                console.error("Falha ao subir imagem Imagen 3 para Fal:", errUpload);
+                console.error("Falha ao subir imagem Gemini 2.5 Image para Fal:", errUpload);
                 imageUrl = base64Img;
               }
             } else {
               imageUrl = base64Img;
             }
-          } else if (imagenResponse.error) {
-            throw new Error(imagenResponse.error.message || "Erro do Imagen 3");
+          } else if (geminiImageResponse.error) {
+            throw new Error(geminiImageResponse.error.message || "Erro do Gemini Image");
           }
         } else if (falKey && !falKey.includes('sua_chave')) {
           console.log(`[AI Proxy Scene] Gerando imagem via Fal.ai...`);

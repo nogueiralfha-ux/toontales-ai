@@ -70,34 +70,66 @@ async function generateLineArtFromImage(imageUrl: string): Promise<string | null
           gray[i] = 0.299 * r + 0.587 * g + 0.114 * b;
         }
 
-        // 2) Sobel: magnitude do gradiente por pixel
-        const out = sctx.createImageData(w, h);
-        const gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
-        const gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
-        const THRESHOLD = 60;
-
+        // 1.5) Suavização (Box Blur) para remover ruído e texturas finas
+        const smooth = new Float32Array(w * h);
         for (let y = 0; y < h; y++) {
           for (let x = 0; x < w; x++) {
-            let sx = 0, sy = 0;
-            if (x > 0 && x < w - 1 && y > 0 && y < h - 1) {
-              let k = 0;
-              for (let dy = -1; dy <= 1; dy++) {
-                for (let dx = -1; dx <= 1; dx++) {
-                  const v = gray[(y + dy) * w + (x + dx)];
-                  sx += v * gx[k];
-                  sy += v * gy[k];
-                  k++;
+            let sum = 0;
+            let count = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const ny = y + dy;
+                const nx = x + dx;
+                if (ny >= 0 && ny < h && nx >= 0 && nx < w) {
+                  sum += gray[ny * w + nx];
+                  count++;
                 }
               }
             }
+            smooth[y * w + x] = sum / count;
+          }
+        }
+
+        // 2) Sobel: magnitude do gradiente por pixel
+        const out = sctx.createImageData(w, h);
+        // Preenche o fundo com branco por padrão
+        for (let i = 0; i < w * h; i++) {
+          out.data[i * 4] = 255;
+          out.data[i * 4 + 1] = 255;
+          out.data[i * 4 + 2] = 255;
+          out.data[i * 4 + 3] = 255;
+        }
+
+        const gx = [-1, 0, 1, -2, 0, 2, -1, 0, 1];
+        const gy = [-1, -2, -1, 0, 0, 0, 1, 2, 1];
+        const THRESHOLD = 35; // Limiar ajustado para capturar melhor contornos suaves
+
+        for (let y = 1; y < h - 1; y++) {
+          for (let x = 1; x < w - 1; x++) {
+            let sx = 0, sy = 0;
+            let k = 0;
+            for (let dy = -1; dy <= 1; dy++) {
+              for (let dx = -1; dx <= 1; dx++) {
+                const v = smooth[(y + dy) * w + (x + dx)];
+                sx += v * gx[k];
+                sy += v * gy[k];
+                k++;
+              }
+            }
             const mag = Math.sqrt(sx * sx + sy * sy);
-            const isEdge = mag > THRESHOLD;
-            const idx = (y * w + x) * 4;
-            const val = isEdge ? 0 : 255; // linha preta sobre fundo branco
-            out.data[idx] = val;
-            out.data[idx + 1] = val;
-            out.data[idx + 2] = val;
-            out.data[idx + 3] = 255;
+            if (mag > THRESHOLD) {
+              // Engrossa o traço desenhando nos vizinhos para fazer contorno estilo livro de colorir
+              for (let dy = 0; dy <= 1; dy++) {
+                for (let dx = 0; dx <= 1; dx++) {
+                  const idx = ((y + dy) * w + (x + dx)) * 4;
+                  if (idx < out.data.length) {
+                    out.data[idx] = 30; // Preto suave limpo
+                    out.data[idx + 1] = 30;
+                    out.data[idx + 2] = 30;
+                  }
+                }
+              }
+            }
           }
         }
 
