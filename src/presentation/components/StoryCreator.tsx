@@ -135,6 +135,21 @@ export const StoryCreator: React.FC<StoryCreatorProps> = ({ onGenerate }) => {
       finalPrompt = `[Nome do Adulto: ${adultName}] ${finalPrompt}`;
     }
 
+    // Salva no localStorage para consistência pós-pagamento ou checkout
+    try {
+      localStorage.setItem('toontales_pending_name', childName.trim() || adultName.trim() || 'Amiguinho');
+      localStorage.setItem('toontales_pending_theme', theme);
+      localStorage.setItem('toontales_pending_age', ageGroup);
+      if (childPhoto) {
+        localStorage.setItem('toontales_pending_photo', childPhoto);
+      } else {
+        localStorage.removeItem('toontales_pending_photo');
+      }
+      localStorage.setItem('toontales_pending_prompt', finalPrompt);
+    } catch (storageErr) {
+      console.warn("Falha ao salvar dados pendentes no localStorage:", storageErr);
+    }
+
     try {
       await onGenerate(theme, ageGroup, finalPrompt, childPhoto, parentPhoto, videoDuration);
     } catch (err) {
