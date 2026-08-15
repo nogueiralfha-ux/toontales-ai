@@ -491,8 +491,8 @@ export const LocalSecureApp: React.FC = () => {
         };
       }
     } catch (e: any) {
-      console.warn("Falha ao gerar história via API real. Utilizando gerador local como fallback:", e);
-      alert(`⚠️ Falha na geração com IA Real:\n${e.message || e}\n\nO sistema usará o gerador simulado de rascunhos como fallback temporário.`);
+      console.error("Falha ao conectar na API remota da Vercel:", e);
+      alert(`⚠️ Erro na Geração Real (Vercel):\n${e.message || e}\n\nO sistema usará o gerador de rascunhos lúdicos 3D local como contingência.`);
       const title = prompt.length > 35 ? prompt.substring(0, 35) + '...' : prompt;
       newStory = await storyService.generateStory(theme, ageGroup, title);
     }

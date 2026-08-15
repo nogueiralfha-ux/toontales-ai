@@ -94,7 +94,8 @@ export class MockStoryService implements IStoryService {
       
       // Dynamic name injection
       if (customName) {
-        const isMale = !customName.endsWith('a') || ['davi', 'lucca', 'lucas', 'pedro', 'joao', 'joão', 'gabriel', 'mateus', 'matheus', 'felipe', 'gustavo', 'henrique', 'bernardo', 'heitor', 'samuel', 'miguel'].includes(customName.toLowerCase());
+        const isGirlName = customName.endsWith('a') || customName.endsWith('e') || customName.endsWith('r') || ['ester', 'helena', 'sofia', 'maria', 'ana', 'julia', 'júlia', 'laura', 'alice', 'beatriz', 'isabel', 'ruth'].includes(customName.toLowerCase());
+        const isMale = !isGirlName && !['davi', 'lucca', 'lucas', 'pedro', 'joao', 'joão', 'gabriel', 'mateus', 'matheus', 'felipe', 'gustavo', 'henrique', 'bernardo', 'heitor', 'samuel', 'miguel'].includes(customName.toLowerCase());
         
         if (isMale) {
           text = text
@@ -120,11 +121,37 @@ export class MockStoryService implements IStoryService {
             .replace(/destemida/g, 'destemido')
             .replace(/pequena/g, 'pequeno')
             .replace(/Lili/g, customName)
+            .replace(/Davi/g, customName)
+            .replace(/Jonas/g, customName)
+            .replace(/Moisés/g, customName)
             .replace(/Noé/g, customName)
             .replace(/gotinha Pingo/g, customName)
             .replace(/Pingo/g, customName);
         } else {
           text = text
+            .replace(/a destemido coelho HELENA/g, `a destemida jovem ${customName}`)
+            .replace(/o destemido coelho/g, `a destemida garotinha`)
+            .replace(/O destemido coelho/g, `A destemida garotinha`)
+            .replace(/o coelho/g, `a garotinha`)
+            .replace(/O coelho/g, `A garotinha`)
+            .replace(/o pequeno pastorzinho/g, `a pequena garotinha`)
+            .replace(/O pequeno pastorzinho/g, `A pequena garotinha`)
+            .replace(/o jovem Davi/g, `a jovem ${customName}`)
+            .replace(/O jovem Davi/g, `A jovem ${customName}`)
+            .replace(/o profeta/g, `a jovem ${customName}`)
+            .replace(/O profeta/g, `A jovem ${customName}`)
+            .replace(/um homem/g, `uma garotinha`)
+            .replace(/Um homem/g, `Uma garotinha`)
+            .replace(/o homem/g, `a garotinha`)
+            .replace(/O homem/g, `A garotinha`)
+            .replace(/um menino/g, `uma menina`)
+            .replace(/Um menino/g, `Uma menina`)
+            .replace(/o menino/g, `a menina`)
+            .replace(/O menino/g, `A menina`)
+            .replace(/destemido/g, `destemida`)
+            .replace(/Davi/g, customName)
+            .replace(/Jonas/g, customName)
+            .replace(/Moisés/g, customName)
             .replace(/Noé/g, customName)
             .replace(/coelhinha Lili/g, customName)
             .replace(/coelha Lili/g, customName)
@@ -141,7 +168,7 @@ export class MockStoryService implements IStoryService {
           .replace(/família/g, parentRole);
       }
 
-      const illustrationSvg = this.generateIllustrationSvg(theme, i, sceneCount, generatedTitle);
+      const illustrationSvg = this.generateIllustrationSvg(theme, i, sceneCount, generatedTitle, customName);
       const coloringSvg = this.generateColoringSvg(theme, i, sceneCount, generatedTitle);
       
       scenes.push({
@@ -347,11 +374,44 @@ export class MockStoryService implements IStoryService {
     }
 
     if (theme === 'Aventura') {
+      const lowerTitle = title.toLowerCase();
+      
+      // Variação 1: Aventura Espacial / Astronauta
+      if (lowerTitle.includes('espaço') || lowerTitle.includes('espaco') || lowerTitle.includes('planeta') || lowerTitle.includes('estrela') || lowerTitle.includes('lua') || lowerTitle.includes('foguete')) {
+        const texts3_6 = [
+          "A pequena Lili colocou seu capacete de astronauta para viajar até as estrelas.",
+          "Seu foguete prateado decolou em direção à Lua com um rastro de luz brilhante.",
+          "Chegando ao espaço, ela flutuou suavemente entre os cometas coloridos.",
+          "Ela encontrou um pequeno alienígena amigável que precisava de ajuda para consertar sua nave.",
+          "Juntos, eles usaram estrelas cadentes para iluminar o caminho de volta.",
+          "Ela plantou uma sementinha de flor brilhante na superfície da Lua.",
+          "Do alto do espaço, ela admirou a Terra azul e linda girando devagar.",
+          "De volta à Terra, ela guardou uma pedrinha da Lua como lembrança de sua jornada inesquecível!"
+        ];
+        return isSimple ? texts3_6[page - 1] || "" : texts3_6[page - 1] || "";
+      }
+
+      // Variação 2: Aventura no Reino dos Dinossauros
+      if (lowerTitle.includes('dino') || lowerTitle.includes('dinossauro') || lowerTitle.includes('fóssil') || lowerTitle.includes('floresta antiga')) {
+        const texts3_6 = [
+          "A pequena Lili encontrou uma pegada gigante e misteriosa na floresta.",
+          "Seguindo as pistas, ela descobriu uma passagem secreta entre árvores milenares.",
+          "Do outro lado, ela avistou um bebê dinossauro verde que estava perdido de sua mãe.",
+          "Com muito carinho, ela ofereceu folhas fresquinhas para acalmar o pequeno dino.",
+          "Juntos, eles cruzaram um riacho de águas mornas e subiram a montanha do vulcão adormecido.",
+          "No topo da montanha, a mamãe dinossauro sorriu de alegria ao ver seu filhote seguro.",
+          "O bebê dinossauro deu um abraço carinhoso de despedida na nova amiga.",
+          "Ela voltou para casa sabendo que a bondade constrói pontes de amizade entre todos os seres!"
+        ];
+        return isSimple ? texts3_6[page - 1] || "" : texts3_6[page - 1] || "";
+      }
+
+      // Variação 3: Aventura Padrão (Floresta Encantada)
       const texts3_6 = [
-        "A pequena coelhinha Lili adorava explorar a floresta perto de sua casa.",
+        "A pequena Lili adorava explorar a floresta perto de sua casa.",
         "Ela achou um mapa antigo escondido dentro de uma árvore oca.",
         "O mapa tinha um desenho de uma grande árvore com folhas douradas.",
-        "No caminho, Lili encontrou o esquilo Kiko, que decidiu ajudá-la.",
+        "No caminho, ela encontrou um amiguinho especial que decidiu ajudá-la.",
         "Juntos, eles atravessaram uma ponte de troncos sobre um riacho barulhento.",
         "Eles subiram uma colina verde sob o céu azul e ensolarado.",
         "Atrás de um arbusto florido, viram a linda árvore que brilhava forte.",
@@ -437,7 +497,7 @@ export class MockStoryService implements IStoryService {
     return isSimple ? texts3_6[page - 1] || "" : texts7_12[page - 1] || "";
   }
 
-  private generateIllustrationSvg(theme: StoryTheme, page: number, total: number, title: string = ''): string {
+  private generateIllustrationSvg(theme: StoryTheme, page: number, total: number, title: string = '', customName: string = ''): string {
     const progress = page / total;
     const isNight = progress > 0.8;
     const skyColor = isNight ? 'url(#nightSky)' : 'url(#daySky)';
@@ -570,70 +630,95 @@ export class MockStoryService implements IStoryService {
       }
     }
 
-    // Adiciona o Personagem Principal (Lili, Noé ou Pingo)
+    const isGirl = !customName || customName.endsWith('a') || customName.endsWith('e') || customName.endsWith('r') || ['ester', 'helena', 'sofia', 'maria', 'ana', 'julia', 'júlia', 'laura', 'alice', 'beatriz', 'isabel', 'ruth'].includes(customName.toLowerCase());
+
+    // Renderiza o modelo 3D Pixar baseado nas fotos de referência enviadas (Ester, Helena e Davi)
     let character = '';
-    if (theme === 'Bíblico') {
-      // Noé
+    if (isGirl) {
+      // Princesa 3D Pixar (Ester / Helena)
       character = `
-        <g transform="translate(180, 360)">
-          <!-- Corpo/Roupas -->
-          <rect x="-15" y="30" width="30" height="60" rx="10" fill="#D2B48C" stroke="#5C2E0B" stroke-width="3" />
-          <!-- Cabeça -->
-          <circle cx="0" cy="10" r="22" fill="#FFD1A9" stroke="#5C2E0B" stroke-width="3" />
-          <!-- Barba -->
-          <path d="M -22 15 Q 0 45 22 15 L 15 35 Q 0 45 -15 35 Z" fill="#F5F5F5" stroke="#CCC" stroke-width="2" />
-          <!-- Olhos grandes -->
-          <circle cx="-7" cy="5" r="5" fill="#000" />
-          <circle cx="-8" cy="4" r="2" fill="#FFF" />
-          <circle cx="7" cy="5" r="5" fill="#000" />
-          <circle cx="8" cy="4" r="2" fill="#FFF" />
-          <!-- Boca feliz -->
-          <path d="M -5 14 Q 0 18 5 14" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" />
-        </g>
-      `;
-    } else if (theme === 'Aventura') {
-      // Lili a Coelha
-      character = `
-        <g transform="translate(300, 390)">
-          <!-- Corpo -->
-          <ellipse cx="0" cy="45" rx="20" ry="25" fill="#FFA8B6" stroke="#C75A6B" stroke-width="3" />
-          <circle cx="0" cy="42" r="10" fill="#FFF" />
-          <!-- Orelhas grandes de coelho -->
-          <ellipse cx="-10" cy="-25" rx="8" ry="25" fill="#FFCAD4" stroke="#C75A6B" stroke-width="3" transform="rotate(-10 -10 -25)" />
-          <ellipse cx="-10" cy="-25" rx="4" ry="18" fill="#FFF" transform="rotate(-10 -10 -25)" />
+        <g transform="translate(360, 310)" filter="url(#clayShadow)">
+          <!-- Capa Roxa / Rosa Real 3D -->
+          <path d="M -35 25 Q -45 60 -40 105 L 40 105 Q 45 60 35 25 Z" fill="#8E44AD" stroke="#1D2A44" stroke-width="2.5" />
           
-          <ellipse cx="10" cy="-25" rx="8" ry="25" fill="#FFCAD4" stroke="#C75A6B" stroke-width="3" transform="rotate(10 10 -25)" />
-          <ellipse cx="10" cy="-25" rx="4" ry="18" fill="#FFF" transform="rotate(10 10 -25)" />
-          <!-- Cabeça -->
-          <circle cx="0" cy="10" r="24" fill="#FFCAD4" stroke="#C75A6B" stroke-width="3" />
-          <!-- Olhos grandes de Cartoon -->
-          <circle cx="-8" cy="4" r="6" fill="#000" />
-          <circle cx="-9" cy="2" r="2.5" fill="#FFF" />
-          <circle cx="8" cy="4" r="6" fill="#000" />
-          <circle cx="7" cy="2" r="2.5" fill="#FFF" />
-          <!-- Narizinho -->
-          <polygon points="-3,11 3,11 0,14" fill="#FF4D6D" />
-          <!-- Sorriso -->
-          <path d="M -6 17 Q 0 22 6 17" fill="none" stroke="#000" stroke-width="2.5" stroke-linecap="round" />
+          <!-- Vestido / Túnica Real Bege/Dourado 3D -->
+          <path d="M -22 25 L 22 25 L 32 100 L -32 100 Z" fill="#F5EEF8" stroke="#1D2A44" stroke-width="2.5" />
+          <path d="M -20 27 L 20 27 L 29 98 L -29 98 Z" fill="url(#character3DGloss)" />
+          <rect x="-20" y="45" width="40" height="8" fill="#F1C40F" rx="4" />
+          
+          <!-- Cabeça 3D Claymation Pixar -->
+          <circle cx="0" cy="-5" r="30" fill="#F4A261" stroke="#1D2A44" stroke-width="2.5" />
+          <circle cx="0" cy="-5" r="30" fill="url(#character3DGloss)" />
+          
+          <!-- Cabelos Longos Ondulados 3D Castanho Real (Como Helena e Ester) -->
+          <path d="M -30 -15 Q -38 20 -28 50 Q -20 60 -15 50 Q -25 20 -20 -15 Z" fill="#5D4037" />
+          <path d="M 30 -15 Q 38 20 28 50 Q 20 60 15 50 Q 25 20 20 -15 Z" fill="#5D4037" />
+          <circle cx="-15" cy="-25" r="14" fill="#4E342E" />
+          <circle cx="15" cy="-25" r="14" fill="#4E342E" />
+          <circle cx="0" cy="-30" r="16" fill="#5D4037" />
+
+          <!-- Tiarinha de Princesa 3D com Jóia Rosa -->
+          <path d="M -16 -30 Q 0 -42 16 -30 L 10 -26 Q 0 -34 -10 -26 Z" fill="#F1C40F" stroke="#1D2A44" stroke-width="1.5" />
+          <circle cx="0" cy="-34" r="4" fill="#E74C3C" />
+          
+          <!-- Olhos Doces Estilo Pixar 3D (Castanhos Grandes) -->
+          <circle cx="-11" cy="-7" r="9" fill="#FFFFFF" stroke="#1D2A44" stroke-width="1.5" />
+          <circle cx="-9" cy="-7" r="5" fill="#3D2314" />
+          <circle cx="-8" cy="-7" r="2.5" fill="#000000" />
+          <circle cx="-11" cy="-10" r="2" fill="#FFFFFF" />
+          
+          <circle cx="11" cy="-7" r="9" fill="#FFFFFF" stroke="#1D2A44" stroke-width="1.5" />
+          <circle cx="13" cy="-7" r="5" fill="#3D2314" />
+          <circle cx="14" cy="-7" r="2.5" fill="#000000" />
+          <circle cx="11" cy="-10" r="2" fill="#FFFFFF" />
+          
+          <!-- Bochechas Coradas -->
+          <circle cx="-18" cy="5" r="6" fill="#E76F51" opacity="0.4" />
+          <circle cx="18" cy="5" r="6" fill="#E76F51" opacity="0.4" />
+          
+          <!-- Sorriso Radiante -->
+          <path d="M -8 8 Q 0 16 8 8" fill="#FFFFFF" stroke="#1D2A44" stroke-width="2.5" />
         </g>
       `;
     } else {
-      // Gotinha Pingo
+      // Menino Herói 3D Pixar (Davi)
       character = `
-        <g transform="translate(360, 330)">
-          <!-- Gotinha shape (Gota d'água de cartoon) -->
-          <path d="M 0 -35 C 30 10 30 35 0 35 C -30 35 -30 10 0 -35 Z" fill="#A0E8FF" stroke="#0096c7" stroke-width="4" filter="drop-shadow(0px 4px 6px rgba(0,0,0,0.15))" />
-          <path d="M -10 -10 C -15 0 -15 15 -10 20 C -5 20 -8 5 -10 -10 Z" fill="#FFF" opacity="0.5" />
-          <!-- Olhos de cartoon super fofos -->
-          <circle cx="-7" cy="12" r="6" fill="#000" />
-          <circle cx="-8.5" cy="10.5" r="2" fill="#FFF" />
-          <circle cx="7" cy="12" r="6" fill="#000" />
-          <circle cx="5.5" cy="10.5" r="2" fill="#FFF" />
-          <!-- Corado -->
-          <circle cx="-13" cy="18" r="4" fill="#FFB3C1" opacity="0.8" />
-          <circle cx="13" cy="18" r="4" fill="#FFB3C1" opacity="0.8" />
-          <!-- Sorriso de alegria -->
-          <path d="M -4 20 Q 0 24 4 20" fill="none" stroke="#000" stroke-width="3" stroke-linecap="round" />
+        <g transform="translate(360, 330)" filter="url(#clayShadow)">
+          <!-- Túnica Bege de Pastorzinho / Herói Pixar -->
+          <path d="M -22 30 L 22 30 L 28 95 L -28 95 Z" fill="#FAF0CA" stroke="#1D2A44" stroke-width="2.5" />
+          <path d="M -20 32 L 20 32 L 25 93 L -25 93 Z" fill="url(#character3DGloss)" />
+          <!-- Cinto de Couro -->
+          <rect x="-18" y="55" width="36" height="8" fill="#B07D62" rx="4" />
+          <line x1="-15" y1="35" x2="10" y2="75" stroke="#774936" stroke-width="5" />
+          
+          <!-- Cabeça 3D Claymation Pixar -->
+          <circle cx="0" cy="0" r="30" fill="#F4A261" stroke="#1D2A44" stroke-width="2.5" />
+          <circle cx="0" cy="0" r="30" fill="url(#character3DGloss)" />
+          
+          <!-- Cabelos Cacheados Castanhos 3D (Conforme imagem do Davi) -->
+          <circle cx="-22" cy="-20" r="14" fill="#4A2810" />
+          <circle cx="-10" cy="-28" r="15" fill="#4A2810" />
+          <circle cx="5" cy="-28" r="15" fill="#4A2810" />
+          <circle cx="20" cy="-20" r="14" fill="#4A2810" />
+          <circle cx="0" cy="-18" r="16" fill="#5C3214" />
+          
+          <!-- Olhos Expressivos 3D Pixar -->
+          <circle cx="-11" cy="-2" r="9" fill="#FFFFFF" stroke="#1D2A44" stroke-width="1.5" />
+          <circle cx="-9" cy="-2" r="5" fill="#3D2314" />
+          <circle cx="-8" cy="-2" r="2.5" fill="#000000" />
+          <circle cx="-11" cy="-5" r="2" fill="#FFFFFF" />
+          
+          <circle cx="11" cy="-2" r="9" fill="#FFFFFF" stroke="#1D2A44" stroke-width="1.5" />
+          <circle cx="13" cy="-2" r="5" fill="#3D2314" />
+          <circle cx="14" cy="-2" r="2.5" fill="#000000" />
+          <circle cx="11" cy="-5" r="2" fill="#FFFFFF" />
+          
+          <!-- Bochechas Coradas -->
+          <circle cx="-18" cy="10" r="6" fill="#E76F51" opacity="0.4" />
+          <circle cx="18" cy="10" r="6" fill="#E76F51" opacity="0.4" />
+          
+          <!-- Sorriso Corajoso -->
+          <path d="M -9 12 Q 0 20 9 12" fill="#FFFFFF" stroke="#1D2A44" stroke-width="2.5" />
         </g>
       `;
     }
@@ -641,26 +726,53 @@ export class MockStoryService implements IStoryService {
     return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600" width="100%" height="100%">
   <defs>
     <linearGradient id="daySky" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#A9C9FF" />
-      <stop offset="100%" stop-color="#FFEBFF" />
+      <stop offset="0%" stop-color="#3A86FF" />
+      <stop offset="50%" stop-color="#70A6FF" />
+      <stop offset="100%" stop-color="#E8F1FF" />
     </linearGradient>
     <linearGradient id="nightSky" x1="0%" y1="0%" x2="0%" y2="100%">
-      <stop offset="0%" stop-color="#141E30" />
-      <stop offset="100%" stop-color="#243B55" />
+      <stop offset="0%" stop-color="#0B132B" />
+      <stop offset="100%" stop-color="#1C2541" />
     </linearGradient>
+    <radialGradient id="sun3D" cx="35%" cy="35%" r="65%">
+      <stop offset="0%" stop-color="#FFF5C0" />
+      <stop offset="40%" stop-color="#FFC107" />
+      <stop offset="100%" stop-color="#FF8F00" />
+    </radialGradient>
+    <radialGradient id="character3DGloss" cx="30%" cy="30%" r="70%">
+      <stop offset="0%" stop-color="#FFFFFF" stop-opacity="0.6" />
+      <stop offset="50%" stop-color="#FFFFFF" stop-opacity="0.0" />
+    </radialGradient>
+    <linearGradient id="ground3D" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#70E000" />
+      <stop offset="40%" stop-color="#38B000" />
+      <stop offset="100%" stop-color="#007200" />
+    </linearGradient>
+    <filter id="clayShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="12" stdDeviation="8" flood-color="#000000" flood-opacity="0.25" />
+    </filter>
+    <filter id="softGlow" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur stdDeviation="6" result="blur" />
+      <feComposite in="SourceGraphic" in2="blur" operator="over" />
+    </filter>
   </defs>
   
-  <!-- Sky -->
+  <!-- Sky 3D -->
   <rect width="800" height="600" fill="${skyColor}" />
   
-  <!-- Sol/Lua -->
-  ${isNight ? '<circle cx="700" cy="100" r="30" fill="#FFE082" filter="drop-shadow(0 0 8px #FFE082)" />' : '<circle cx="700" cy="100" r="45" fill="#FF9E00" filter="drop-shadow(0 0 12px #FF9E00)" />'}
+  <!-- Sol 3D / Lua com Relevo -->
+  ${isNight 
+    ? '<circle cx="700" cy="100" r="35" fill="#FFE082" filter="url(#clayShadow)" />' 
+    : '<circle cx="700" cy="100" r="48" fill="url(#sun3D)" filter="url(#clayShadow)" />'}
   
-  <!-- Chão Suave -->
-  <rect x="0" y="470" width="800" height="130" fill="#74C69D" />
-  <path d="M 0 470 Q 200 440 400 470 T 800 470" fill="#52B788" />
+  <!-- Chão Suave em 3D (Claymation) -->
+  <path d="M 0 460 Q 250 420 500 460 T 800 450 L 800 600 L 0 600 Z" fill="url(#ground3D)" filter="url(#clayShadow)" />
   
   ${extraElements}
+  
+  <!-- Sombra Projetada do Personagem no Chão (Efeito 3D Depth) -->
+  <ellipse cx="360" cy="485" rx="45" ry="12" fill="#000000" opacity="0.2" filter="url(#softGlow)" />
+
   
   <!-- Personagem Principal -->
   ${character}

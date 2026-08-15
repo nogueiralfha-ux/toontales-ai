@@ -286,7 +286,7 @@ Estrutura do JSON esperado:
     {
       "pageNumber": 1,
       "text": "Texto da cena lúdica adaptado para a faixa etária especificada",
-      "illustrationPrompt": "Prompt em inglês ultra descritivo e colorido para gerar a ilustração desta cena no estilo desenho animado infantil, 3D claymation ou cartoon vibrante."
+      "illustrationPrompt": "High quality 3D Pixar Disney style animation, 3D claymation, vibrant 3D renders, cute friendly characters, volumetric lighting, Octane render 8K. Detailed prompt: [descreva a cena em inglês]."
     }
   ]
 }`;

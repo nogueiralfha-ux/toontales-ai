@@ -10,7 +10,7 @@ interface StoryFlipbookProps {
   onPageChange?: (pageIndex: number) => void;
 }
 
-export const StoryFlipbook: React.FC<StoryFlipbookProps> = ({ scenes, storyTitle, moralLesson, bibleReference, generatingPages = {}, onPageChange }) => {
+export const StoryFlipbook: React.FC<StoryFlipbookProps> = ({ scenes, storyTitle, moralLesson, bibleReference, onPageChange }) => {
   const [currentPageIndex, setCurrentPageIndex] = useState(0);
   const [isPlayingNarration, setIsPlayingNarration] = useState(false);
   const currentScene = scenes[currentPageIndex];
@@ -122,12 +122,7 @@ export const StoryFlipbook: React.FC<StoryFlipbookProps> = ({ scenes, storyTitle
       <div className="grid grid-cols-1 md:grid-cols-2 bg-amber-50/40 rounded-[2.5rem] overflow-hidden border-4 border-amber-900/10 shadow-2xl min-h-[480px]">
         {/* Left Page: Illustration */}
         <div className="bg-white p-8 flex items-center justify-center border-b md:border-b-0 md:border-r border-amber-900/10 relative">
-          {generatingPages[currentPageIndex] ? (
-            <div className="w-full aspect-[4/3] max-w-md bg-slate-55 rounded-2xl overflow-hidden shadow-md flex flex-col items-center justify-center text-slate-400 gap-3 border border-slate-100">
-              <div className="w-10 h-10 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-              <p className="text-xs font-bold animate-pulse text-amber-500 font-serif">Desenhando cenário... 🎨</p>
-            </div>
-          ) : currentScene.illustrationUrl ? (
+          {currentScene.illustrationUrl ? (
             <img 
               src={currentScene.illustrationUrl} 
               alt={`Ilustração ${currentScene.pageNumber}`}

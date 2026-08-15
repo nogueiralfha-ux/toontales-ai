@@ -332,14 +332,7 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
             
             {/* Premium Video Player Container */}
             <div className="relative aspect-[16/9] w-full bg-black rounded-2xl overflow-hidden border border-slate-900 flex items-center justify-center shadow-inner group">
-              {generatingPages[currentVideoScene] ? (
-                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-900 text-slate-300 gap-4">
-                  <div className="w-12 h-12 border-4 border-amber-500/20 border-t-amber-500 rounded-full animate-spin" />
-                  <p className="text-sm font-black font-serif animate-pulse text-amber-400">
-                    Desenhando Ilustração da Página {currentVideoScene + 1}... 🎨
-                  </p>
-                </div>
-              ) : videoScene.illustrationUrl ? (
+              {videoScene.illustrationUrl ? (
                 <img 
                   src={videoScene.illustrationUrl} 
                   alt={`Cena ${currentVideoScene + 1}`}

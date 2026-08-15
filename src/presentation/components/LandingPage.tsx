@@ -120,8 +120,18 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onEnterStudio, onSelec
       clearInterval(interval);
       setIsSimulating(false);
       
-      // Generate simulated story details
-      const activeName = childName.trim() || adultName.trim();
+      // Salva no localStorage para garantir que a geração completa use o nome correto
+      localStorage.setItem('toontales_pending_name', activeName);
+      localStorage.setItem('toontales_pending_theme', selectedTheme);
+      localStorage.setItem('toontales_pending_age', selectedAge);
+      if (simulatedPhoto) {
+        localStorage.setItem('toontales_pending_photo', simulatedPhoto);
+      }
+      const customPrompt = storyDetails.trim() 
+        ? `[Nome da Criança/Herói: ${activeName}] ${storyDetails.trim()}`
+        : `[Nome da Criança/Herói: ${activeName}] Escreva uma linda história inspiradora para ${activeName}.`;
+      localStorage.setItem('toontales_pending_prompt', customPrompt);
+
       let title = '';
       let sceneText = '';
       if (selectedTheme === 'Bíblico') {
