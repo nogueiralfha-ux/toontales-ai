@@ -10,7 +10,7 @@ import https from 'https';
 // true` para o front-end oferecer "tentar novamente" em vez de aceitar a
 // imagem como definitiva.
 const FALLBACK_ILLUSTRATION_DATA_URI = 'data:image/svg+xml;base64,' + Buffer.from(`
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 600">
+<svg xmlns="http://www.w3.org/2000/svg" width="100%" height="100%" viewBox="0 0 800 600">
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
       <stop offset="0%" stop-color="#FDE68A"/>
