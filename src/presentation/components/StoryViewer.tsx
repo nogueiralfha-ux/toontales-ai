@@ -332,6 +332,13 @@ export const StoryViewer: React.FC<StoryViewerProps> = ({ story, onBack, onUpdat
             
             {/* Premium Video Player Container */}
             <div className="relative aspect-[16/9] w-full bg-black rounded-2xl overflow-hidden border border-slate-900 flex items-center justify-center shadow-inner group">
+              {generatingPages[currentVideoScene] && (
+                <div className="absolute inset-0 flex flex-col items-center justify-center bg-slate-950/90 backdrop-blur-md z-10 gap-4">
+                  <div className="w-12 h-12 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                  <p className="text-amber-200 text-sm font-bold tracking-wide animate-pulse">Shai está desenhando esta cena com IA...</p>
+                </div>
+              )}
+
               {videoScene.illustrationUrl ? (
                 <img 
                   src={videoScene.illustrationUrl} 

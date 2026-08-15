@@ -252,6 +252,43 @@ export default async function handler(req, res) {
       });
     }
 
+    // 3.5. Streaming Multi-Agent Pipeline (SSE)
+    else if (req.method === 'POST' && pathname === '/api/generate') {
+      res.setHeader('Content-Type', 'text/event-stream; charset=utf-8');
+      res.setHeader('Cache-Control', 'no-cache, no-transform');
+      res.setHeader('Connection', 'keep-alive');
+
+      const { theme, category, age_range, child_name, child_interests, format } = req.body || {};
+      const payload = {
+        theme,
+        category: category || 'AVENTURAS',
+        age_range: age_range || '7-12',
+        child_name,
+        child_interests,
+        format: format || 'storybook'
+      };
+
+      const sendEvent = (event, data) => {
+        res.write(`event: ${event}\ndata: ${JSON.stringify(data)}\n\n`);
+      };
+
+      try {
+        sendEvent('status', { message: 'Iniciando pipeline de agentes ToonTales AI...' });
+
+        const { StoryOrchestrator } = require('./lib/orchestrator');
+        const finalStory = await StoryOrchestrator.executePipeline(payload, (stepMessage, extraData) => {
+          sendEvent('progress', { message: stepMessage, extra: extraData });
+        });
+
+        sendEvent('complete', finalStory);
+      } catch (error) {
+        console.error('[Pipeline Error]', error);
+        sendEvent('error', { message: error.message || 'Erro durante a geração do pipeline.' });
+      } finally {
+        res.end();
+      }
+    }
+
     // 3. Generate Story using Real AI APIs (OpenAI + Fal.ai/Replicate)
     else if (req.method === 'POST' && pathname === '/api/generate-story') {
       const { theme, ageGroup, prompt, childPhoto, parentPhoto, modelId, imageModelId } = req.body;
